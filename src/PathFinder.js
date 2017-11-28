@@ -1,112 +1,171 @@
-import React, { Component } from 'react';
-import { Button, Checkbox, form, FormControl, FormGroup, ControlLabel, ButtonToolbar } from 'react-bootstrap';
+import React, { Component } from "react";
+import {
+  Button,
+  Checkbox,
+  form,
+  FormControl,
+  FormGroup,
+  ControlLabel,
+  ButtonToolbar
+} from "react-bootstrap";
 
-import { BootstrapTable, TableHeaderColumn } from 'react-bootstrap-table';
-import findPath from './PathFinderUtils'
-import _ from 'lodash'
+import { BootstrapTable, TableHeaderColumn } from "react-bootstrap-table";
+import findPath from "./PathFinderUtils";
+import _ from "lodash";
 
 class PathFinder extends Component {
-
   constructor(props) {
-    super()
-    if (localStorage.getItem('LedgerPathFinder')) {
-      this.state = JSON.parse(localStorage.getItem('LedgerPathFinder'))
+    super();
+    if (localStorage.getItem("LedgerPathFinder")) {
+      this.state = JSON.parse(localStorage.getItem("LedgerPathFinder"));
     } else {
       this.state = {
         done: false,
         paused: false,
         running: false,
-        batchSize: 5,
+        batchSize: 10,
         account: 0,
-        address: '',
+        address: "",
         result: [],
         coin: 0,
         index: 0,
         segwit: false,
-      }
+        p2sh: 0,
+        p2pkh: 0
+      };
     }
   }
 
-  componentWillMount() {
+  componentWillUnmount() {
+    var state = {};
+    if (this.state.running || this.state.paused) {
+      this.terminate();
+      Object.assign(state, this.state, { running: false, paused: true });
+    } else {
+      Object.assign(state, this.state);
+    }
+    localStorage.setItem("LedgerPathFinder", JSON.stringify(state));
   }
 
-  handleChangeAddress = (e) => {
+  handleChangeAddress = e => {
     this.setState({ address: e.target.value });
-  }
+  };
 
-  handleChangeAccount = (e) => {
+  handleChangeAccount = e => {
     this.setState({ account: e.target.value });
-  }
+  };
 
-  handleChangeIndex = (e) => {
+  handleChangeIndex = e => {
     this.setState({ index: e.target.value });
-  }
+  };
 
-  handleChangeCoin = (e) => {
+  handleChangeCoin = e => {
     this.setState({ coin: e.target.value });
-  }
+  };
 
-  handleChangeSegwit = (e) => {
+  handleChangeSegwit = e => {
     this.setState({ segwit: !this.state.segwit });
-  }
+  };
 
-  onUpdate = (e) => {
+  handleChangeP2pkh = e => {
+    this.setState({ p2pkh: e.target.value });
+  };
+
+  handleChangeP2sh = e => {
+    this.setState({ p2sh: e.target.value });
+  };
+
+  onUpdate = e => {
     this.setState({
-      index: e[e.length - 1].index,
+      index: e[e.length - 1].index + 1,
       result: this.state.result.concat(e)
-    })
-  }
+    });
+  };
 
-  onDone = (e) => {
-    this.stop()
-    this.setState({ done: true })
-    alert("success")
-  }
+  onDone = e => {
+    this.stop();
+    this.setState({ done: true });
+  };
 
-  onError = (e) => {
-    this.stop()
-    alert(e)
-  }
+  onError = e => {
+    this.stop();
+    alert(e);
+  };
 
   reset = () => {
-    this.setState({ account: 0, address: '', index: 0, result: [], paused: false })
-  }
+    this.setState({
+      account: 0,
+      address: "",
+      index: 0,
+      result: [],
+      paused: false,
+      done: false
+    });
+    localStorage.removeItem("LedgerPathFinder");
+  };
 
   start = () => {
-    this.setState({ running: true })
-    this.terminate = findPath(_.pick(this.state, ["address", 'account', 'index', 'coin', 'segwit', 'batchSize']), this.onUpdate, this.onDone, this.onError)
-  }
+    this.setState({ running: true, paused: false });
+    this.terminate = findPath(
+      _.pick(this.state, [
+        "address",
+        "account",
+        "index",
+        "coin",
+        "segwit",
+        "p2pkh",
+        "p2sh",
+        "batchSize"
+      ]),
+      this.onUpdate,
+      this.onDone,
+      this.onError
+    );
+  };
 
   stop = () => {
-    this.terminate()
-    this.setState({ running: false, paused: true })
-  }
+    this.terminate();
+    this.setState({ running: false, paused: true });
+  };
 
   save = () => {
-    localStorage.setItem('LedgerPathFinder', JSON.stringify(this.state))
-  }
+    localStorage.setItem("LedgerPathFinder", JSON.stringify(this.state));
+  };
 
   render() {
-    var startName = "Start"
+    var startName = "Start";
     if (this.state.paused) {
-      startName = "Continue"
+      startName = "Continue";
     }
     var launchButton = (
-      <Button bsStyle="primary" bsSize="large" onClick={this.start}>{startName}</Button>
-    )
-    if (this.state.running) {
-      launchButton = undefined
+      <Button bsStyle="primary" bsSize="large" onClick={this.start}>
+        {startName}
+      </Button>
+    );
+    if (this.state.running || this.state.done) {
+      launchButton = undefined;
     }
-
 
     return (
       <div className="Finder">
         This is Path finder
         <form>
-          <FormGroup
-            controlId="pathSearch"
-          >
-            <ControlLabel>Coin</ControlLabel>
+          <FormGroup controlId="pathSearch">
+            <ControlLabel>P2PKH</ControlLabel>
+            <FormControl
+              type="text"
+              value={this.state.p2pkh}
+              onChange={this.handleChangeP2pkh}
+              disabled={this.state.running || this.state.paused}
+            />
+            <ControlLabel>P2SH</ControlLabel>
+            <FormControl
+              type="text"
+              value={this.state.p2sh}
+              onChange={this.handleChangeP2sh}
+              disabled={this.state.running || this.state.paused}
+            />
+            <ControlLabel>Coin Type</ControlLabel>
             <FormControl
               type="text"
               value={this.state.coin}
@@ -138,7 +197,10 @@ class PathFinder extends Component {
               onChange={this.handleChangeIndex}
               disabled={this.state.running || this.state.paused}
             />
-            <Checkbox onChange={this.handleChangeSegwit} disabled={this.state.running || this.state.paused}>
+            <Checkbox
+              onChange={this.handleChangeSegwit}
+              disabled={this.state.running || this.state.paused}
+            >
               Segwit
             </Checkbox>
             <FormControl.Feedback />
@@ -146,15 +208,43 @@ class PathFinder extends Component {
         </form>
         <ButtonToolbar>
           {launchButton}
-          {this.state.running &&
-            <Button bsStyle="primary" bsSize="large" onClick={this.stop}>Pause</Button>
-          }
-          <Button bsSize="large" disabled={this.state.running} onClick={this.reset}>reset</Button>
+          {this.state.running && (
+            <Button bsStyle="primary" bsSize="large" onClick={this.stop}>
+              Pause
+            </Button>
+          )}
+          <Button
+            bsSize="large"
+            disabled={this.state.running}
+            onClick={this.reset}
+          >
+            reset
+          </Button>
         </ButtonToolbar>
-        <div className="progress">Addresses scanned: {this.state.result.length}</div>
-        <BootstrapTable data={this.state.result} striped={true} hover={true} pagination exportCSV>
-          <TableHeaderColumn dataField="path">Derivation path</TableHeaderColumn>
-          <TableHeaderColumn dataField="address" isKey={true}>Address</TableHeaderColumn>
+        {this.state.done &&
+          this.state.address.length > 0 && (
+            <div className="result">
+              The corresponding path is:{" "}
+              {this.state.result[this.state.result.length - 1].path}
+            </div>
+          )}
+        <div className="progress">
+          Addresses scanned: {this.state.result.length}
+        </div>
+        <BootstrapTable
+          height="400"
+          data={this.state.result}
+          striped={true}
+          hover={true}
+          pagination
+          exportCSV
+        >
+          <TableHeaderColumn dataField="path">
+            Derivation path
+          </TableHeaderColumn>
+          <TableHeaderColumn dataField="address" isKey={true}>
+            Address
+          </TableHeaderColumn>
         </BootstrapTable>
       </div>
     );
