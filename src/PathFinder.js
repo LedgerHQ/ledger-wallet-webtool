@@ -16,6 +16,7 @@ class PathFinder extends Component {
         done: false,
         paused: false,
         running: false,
+        batchSize: 5,
         account: 0,
         address: '',
         result: [],
@@ -63,8 +64,8 @@ class PathFinder extends Component {
 
   onUpdate(e) {
     this.setState({
-      index: e.index,
-      result: this.state.result.concat([{key: e.index, path: e.path, address: e.address}])
+      index: e[e.length-1].index,
+      result: this.state.result.concat(e)
     })
   }
 
@@ -84,8 +85,8 @@ class PathFinder extends Component {
   }
 
   start() {
-    this.setState({running: true, paused: false})
-    this.terminate = findPath(_.pick(this.state,["address", 'account', 'index', 'coin', 'segwit']),this.onUpdate, this.onDone, this.onError)
+    this.setState({running: true})
+    this.terminate = findPath(_.pick(this.state,["address", 'account', 'index', 'coin', 'segwit', 'batchSize']),this.onUpdate, this.onDone, this.onError)
   }
 
   stop() {
