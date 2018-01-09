@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import {Button, Checkbox, form, FormControl, FormGroup, ControlLabel, ButtonToolbar } from 'react-bootstrap';
+import { Button, Checkbox, form, FormControl, FormGroup, ControlLabel, ButtonToolbar } from 'react-bootstrap';
 
 import { BootstrapTable, TableHeaderColumn } from 'react-bootstrap-table';
 import findPath from './PathFinderUtils'
@@ -25,76 +25,64 @@ class PathFinder extends Component {
         segwit: false,
       }
     }
-    this.handleChangeAccount = this.handleChangeAccount.bind(this)
-    this.handleChangeAddress = this.handleChangeAddress.bind(this)
-    this.start = this.start.bind(this)
-    this.stop = this.stop.bind(this)
-
-    this.reset = this.reset.bind(this)
-    this.handleChangeCoin = this.handleChangeCoin.bind(this)
-    this.handleChangeIndex = this.handleChangeIndex.bind(this)
-    this.handleChangeSegwit = this.handleChangeSegwit.bind(this)
-    this.onUpdate = this.onUpdate.bind(this)
-    this.onDone = this.onDone.bind(this)
-    this.onError = this.onError.bind(this)
   }
 
   componentWillMount() {
   }
 
-  handleChangeAddress(e) {
+  handleChangeAddress = (e) => {
     this.setState({ address: e.target.value });
   }
 
-  handleChangeAccount(e) {
+  handleChangeAccount = (e) => {
     this.setState({ account: e.target.value });
   }
 
-  handleChangeIndex(e) {
+  handleChangeIndex = (e) => {
     this.setState({ index: e.target.value });
   }
 
-  handleChangeCoin(e) {
+  handleChangeCoin = (e) => {
     this.setState({ coin: e.target.value });
   }
 
-  handleChangeSegwit(e) {
+  handleChangeSegwit = (e) => {
     this.setState({ segwit: !this.state.segwit });
   }
 
-  onUpdate(e) {
+  onUpdate = (e) => {
     this.setState({
-      index: e[e.length-1].index,
+      index: e[e.length - 1].index,
       result: this.state.result.concat(e)
     })
   }
 
-  onDone(e) {
+  onDone = (e) => {
     this.stop()
-    this.setState({done: true})
+    this.setState({ done: true })
     alert("success")
   }
 
-  onError(e) {
+  onError = (e) => {
     this.stop()
     alert(e)
   }
 
-  reset() {
-    this.setState({account: 0, address: '', index: 0, result: [], paused: false})
+  reset = () => {
+    this.setState({ account: 0, address: '', index: 0, result: [], paused: false })
   }
 
-  start() {
-    this.setState({running: true})
-    this.terminate = findPath(_.pick(this.state,["address", 'account', 'index', 'coin', 'segwit', 'batchSize']),this.onUpdate, this.onDone, this.onError)
+  start = () => {
+    this.setState({ running: true })
+    this.terminate = findPath(_.pick(this.state, ["address", 'account', 'index', 'coin', 'segwit', 'batchSize']), this.onUpdate, this.onDone, this.onError)
   }
 
-  stop() {
+  stop = () => {
     this.terminate()
-    this.setState({running: false, paused:true})
+    this.setState({ running: false, paused: true })
   }
 
-  save() {
+  save = () => {
     localStorage.setItem('LedgerPathFinder', JSON.stringify(this.state))
   }
 
@@ -124,7 +112,7 @@ class PathFinder extends Component {
               value={this.state.coin}
               placeholder="Bitcoin = 0"
               onChange={this.handleChangeCoin}
-              disabled={this.state.running|| this.state.paused}
+              disabled={this.state.running || this.state.paused}
             />
             <ControlLabel>Address</ControlLabel>
             <FormControl
@@ -140,7 +128,7 @@ class PathFinder extends Component {
               value={this.state.account}
               placeholder="Account number (default = 0)"
               onChange={this.handleChangeAccount}
-              disabled={this.state.running|| this.state.paused}
+              disabled={this.state.running || this.state.paused}
             />
             <ControlLabel>Start index</ControlLabel>
             <FormControl
@@ -148,9 +136,9 @@ class PathFinder extends Component {
               value={this.state.index}
               placeholder="Start index (default = 0)"
               onChange={this.handleChangeIndex}
-              disabled={this.state.running|| this.state.paused}
+              disabled={this.state.running || this.state.paused}
             />
-            <Checkbox onChange={this.handleChangeSegwit} disabled={this.state.running|| this.state.paused}>
+            <Checkbox onChange={this.handleChangeSegwit} disabled={this.state.running || this.state.paused}>
               Segwit
             </Checkbox>
             <FormControl.Feedback />

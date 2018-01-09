@@ -8,7 +8,6 @@ import './App.css';
 class App extends Component {
 constructor() {
   super()
-  this.handleNav = this.handleNav.bind(this)
   this.state = {
     nav: 'home'
   }
