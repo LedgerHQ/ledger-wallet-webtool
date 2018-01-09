@@ -9,10 +9,9 @@ onmessage = function (params) {
   var nextPath = function (i) {
     if (i <= 0x7fffffff) {
       for (var j = 0; j < 2; j++) {
-        index++
         var path = j + "/" + i
         var res = hdnode.derivePath(path)
-        response.push({ index, path: prefix + path, address: res.getAddress() })
+        response.push({ index: i, path: prefix + path, address: res.getAddress() })
         if (res.getAddress() == params.data.address) {
           postMessage({ done: true, response })
           close()

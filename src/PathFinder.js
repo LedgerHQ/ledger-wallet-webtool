@@ -16,7 +16,7 @@ class PathFinder extends Component {
         done: false,
         paused: false,
         running: false,
-        batchSize: 5,
+        batchSize: 10,
         account: 0,
         address: '',
         result: [],
@@ -27,7 +27,11 @@ class PathFinder extends Component {
     }
   }
 
-  componentWillMount() {
+  componentWillUnmount() {
+    this.terminate()
+    var state = {}
+    Object.assign(state, this.state, {running: false, paused: true})
+    localStorage.setItem('LedgerPathFinder',JSON.stringify(state))
   }
 
   handleChangeAddress = (e) => {
@@ -52,7 +56,7 @@ class PathFinder extends Component {
 
   onUpdate = (e) => {
     this.setState({
-      index: e[e.length - 1].index,
+      index: e[e.length - 1].index + 1,
       result: this.state.result.concat(e)
     })
   }
@@ -60,7 +64,6 @@ class PathFinder extends Component {
   onDone = (e) => {
     this.stop()
     this.setState({ done: true })
-    alert("success")
   }
 
   onError = (e) => {
@@ -69,11 +72,12 @@ class PathFinder extends Component {
   }
 
   reset = () => {
-    this.setState({ account: 0, address: '', index: 0, result: [], paused: false })
+    this.setState({ account: 0, address: '', index: 0, result: [], paused: false, done: false })
+    localStorage.removeItem('LedgerPathFinder')
   }
 
   start = () => {
-    this.setState({ running: true })
+    this.setState({ running: true, paused: false })
     this.terminate = findPath(_.pick(this.state, ["address", 'account', 'index', 'coin', 'segwit', 'batchSize']), this.onUpdate, this.onDone, this.onError)
   }
 
@@ -94,7 +98,7 @@ class PathFinder extends Component {
     var launchButton = (
       <Button bsStyle="primary" bsSize="large" onClick={this.start}>{startName}</Button>
     )
-    if (this.state.running) {
+    if (this.state.running || this.state.done) {
       launchButton = undefined
     }
 
@@ -151,8 +155,11 @@ class PathFinder extends Component {
           }
           <Button bsSize="large" disabled={this.state.running} onClick={this.reset}>reset</Button>
         </ButtonToolbar>
+        {this.state.done && this.state.address.length > 0 &&
+          <div className="result">The corresponding path is: {this.state.result[this.state.result.length-1].path}</div>
+        }
         <div className="progress">Addresses scanned: {this.state.result.length}</div>
-        <BootstrapTable data={this.state.result} striped={true} hover={true} pagination exportCSV>
+        <BootstrapTable height='400' data={this.state.result} striped={true} hover={true} pagination exportCSV>
           <TableHeaderColumn dataField="path">Derivation path</TableHeaderColumn>
           <TableHeaderColumn dataField="address" isKey={true}>Address</TableHeaderColumn>
         </BootstrapTable>
