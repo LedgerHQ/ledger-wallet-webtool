@@ -1,4 +1,4 @@
-import ledger from 'ledger'
+import ledger from 'ledgerco'
 
 console.log(ledger)
 
