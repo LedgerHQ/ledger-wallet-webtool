@@ -39,7 +39,6 @@ Dongle.init = function() {
   return new Promise((resolve, reject) => {
       ledger.comm_u2f.create_async(2).then(function(comm) {
       Dongle.btc = new ledger.btc(comm)
-      console.log(comm)
       resolve(comm)
     }).catch(function(err) {
         console.log("error init")
