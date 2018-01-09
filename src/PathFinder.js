@@ -13,6 +13,8 @@ class PathFinder extends Component {
       this.state = JSON.parse(localStorage.getItem('LedgerPathFinder'))
     } else {
       this.state = {
+        done: false,
+        paused: false,
         running: false,
         account: 0,
         address: '',
@@ -68,26 +70,27 @@ class PathFinder extends Component {
 
   onDone(e) {
     this.stop()
+    this.setState({done: true})   
     alert("success")
   }
 
   onError(e) {
     this.stop()    
-    alert("error")
+    alert(e)
   }
 
   reset() {
-    this.setState({account: 0, address: '', index: 0, result: []})
+    this.setState({account: 0, address: '', index: 0, result: [], paused: false})
   }
 
   start() {
-    this.setState({running: true})   
+    this.setState({running: true, paused: false})   
     this.terminate = findPath(_.pick(this.state,["address", 'account', 'index', 'coin', 'segwit']),this.onUpdate, this.onDone, this.onError)
   }
 
   stop() {
     this.terminate()
-    this.setState({running: false})    
+    this.setState({running: false, paused:true})    
   }
 
   save() {
@@ -95,12 +98,17 @@ class PathFinder extends Component {
   }
 
   render() {
+    var startName = "Start"
+    if (this.state.paused) {
+      startName = "Continue"
+    }
     var launchButton = (
-      <Button bsStyle="primary" bsSize="large" onClick={this.start}>Start</Button>      
+      <Button bsStyle="primary" bsSize="large" onClick={this.start}>{startName}</Button>      
     )
     if (this.state.running) {
       launchButton = undefined
     }
+    
 
     return (
       <div className="Finder">
@@ -115,7 +123,7 @@ class PathFinder extends Component {
               value={this.state.coin}
               placeholder="Bitcoin = 0"
               onChange={this.handleChangeCoin}
-              disabled={this.state.running}
+              disabled={this.state.running|| this.state.paused}
             />
             <ControlLabel>Address</ControlLabel>
             <FormControl
@@ -123,7 +131,7 @@ class PathFinder extends Component {
               value={this.state.address}
               placeholder="Address (leave empty to list all addresses)"
               onChange={this.handleChangeAddress}
-              disabled={this.state.running}
+              disabled={this.state.running || this.state.paused}
             />
             <ControlLabel>Account number</ControlLabel>
             <FormControl
@@ -131,7 +139,7 @@ class PathFinder extends Component {
               value={this.state.account}
               placeholder="Account number (default = 0)"
               onChange={this.handleChangeAccount}
-              disabled={this.state.running}
+              disabled={this.state.running|| this.state.paused}
             />
             <ControlLabel>Start index</ControlLabel>
             <FormControl
@@ -139,9 +147,9 @@ class PathFinder extends Component {
               value={this.state.index}
               placeholder="Start index (default = 0)"
               onChange={this.handleChangeIndex}
-              disabled={this.state.running}
+              disabled={this.state.running|| this.state.paused}
             />
-            <Checkbox onChange={this.handleChangeSegwit} disabled={this.state.running}>
+            <Checkbox onChange={this.handleChangeSegwit} disabled={this.state.running|| this.state.paused}>
               Segwit
             </Checkbox>
             <FormControl.Feedback />
@@ -150,7 +158,7 @@ class PathFinder extends Component {
         <ButtonToolbar>
           {launchButton}
           {this.state.running &&
-            <Button bsStyle="primary" bsSize="large" onClick={this.stop}>Stop</Button>
+            <Button bsStyle="primary" bsSize="large" onClick={this.stop}>Pause</Button>
           }
           <Button bsSize="large" disabled={this.state.running} onClick={this.reset}>reset</Button>
         </ButtonToolbar>
