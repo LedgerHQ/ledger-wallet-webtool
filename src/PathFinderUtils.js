@@ -4,7 +4,6 @@ import bitcoin from 'bitcoinjs-lib'
 import bs58 from 'bs58'
 import _ from 'lodash'
 
-console.log(bitcoin)
 
 function parseHexString(str) { 
   var result = [];
@@ -103,7 +102,11 @@ function createXPUB(depth, fingerprint, childnum, chaincode, publicKey, network)
 }
 
 function  findPath(params, onUpdate, onDone, onError) {
-  var i = params.index
+  if (typeof(Worker) !== "undefined") {
+    var derivationWorker = new Worker("./workers/DerivationWorker.js")
+  } else {
+    onError("You need to use Google Chrome")
+  }
   var running = true
   var prevPath = "44'/"+params.coin+ "'"
   var hdnode = {}  
@@ -117,12 +120,10 @@ function  findPath(params, onUpdate, onDone, onError) {
             var childnum = (0x80000000 | parseInt(params.account)) >>> 0
             var xpub = createXPUB(3, fingerprint, childnum, nodeData.chainCode, publicKey, Networks[params.coin].xpub)
             var xpub58 = encodeBase58Check(xpub)
-            hdnode = bitcoin.HDNode.fromBase58(xpub58, Networks[params.coin].bitcoinjs)
-            resolve(hdnode)
+            resolve(xpub58)
           })
         })
       }
-      console.log(Dongle.btc.getWalletPublicKey_async)
       Dongle.btc.getWalletPublicKey_async(prevPath).then((nodeData, error) => {
         var publicKey = compressPublicKey(nodeData.publicKey)
         publicKey = parseHexString(publicKey)
@@ -138,32 +139,32 @@ function  findPath(params, onUpdate, onDone, onError) {
   Dongle.init().then((comm) => {
     Dongle.setCoinVersion(comm, Networks[params.coin]).then((res) => {
       console.log("success set coin")
-      initialize().then((hdnode) => {
-        console.log("success initialized", hdnode)
-        if (typeof(Worker) !== "undefined") {
-          var derivationWorker = new Worker("DerivationWorker.js")
-          derivationWorker.onmessage = (event) => {
-            if(event.done) {
-              onDone(event)
-            } else {
-              onUpdate(event)
-            }
+      initialize().then((xpub58) => {
+        console.log("success initialized", xpub58)
+        params.xpub58 = xpub58
+        params.network = Networks[params.coin].bitcoinjs
+        derivationWorker.onmessage = (event) => {
+          onUpdate(event.data.response)
+          if(event.data.done) {
+            onDone()
           }
-          derivationWorker.onerror = (error) => {
-            
+          if(event.data.failed) {
+            onError("The address is not from this account")
           }
-          derivationWorker.postMessage(params)
-
-        } else {
-          alert("You need to use Google Chrome")
         }
+        derivationWorker.onerror = (error) => {
+          onError("Worker error")
+        }
+        derivationWorker.postMessage(params)        
       })
     })
   })
   
  
   function terminate() {
+    console.log("terminating")
     running = false
+    derivationWorker.terminate()
   };
   
   return terminate
