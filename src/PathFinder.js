@@ -23,15 +23,19 @@ class PathFinder extends Component {
         coin: 0,
         index: 0,
         segwit: false,
+        p2sh: '',
+        p2pkh: '',
       }
     }
   }
 
   componentWillUnmount() {
-    this.terminate()
+    if (this.state.running) {
+      this.terminate()
+    }
     var state = {}
-    Object.assign(state, this.state, {running: false, paused: true})
-    localStorage.setItem('LedgerPathFinder',JSON.stringify(state))
+    Object.assign(state, this.state, { running: false, paused: true })
+    localStorage.setItem('LedgerPathFinder', JSON.stringify(state))
   }
 
   handleChangeAddress = (e) => {
@@ -52,6 +56,14 @@ class PathFinder extends Component {
 
   handleChangeSegwit = (e) => {
     this.setState({ segwit: !this.state.segwit });
+  }
+
+  handleChangeP2pkh = (e) => {
+    this.setState({ p2pkh: e.target.value });
+  }
+
+  handleChangeP2sh = (e) => {
+    this.setState({ p2sh: e.target.value });
   }
 
   onUpdate = (e) => {
@@ -78,7 +90,7 @@ class PathFinder extends Component {
 
   start = () => {
     this.setState({ running: true, paused: false })
-    this.terminate = findPath(_.pick(this.state, ["address", 'account', 'index', 'coin', 'segwit', 'batchSize']), this.onUpdate, this.onDone, this.onError)
+    this.terminate = findPath(_.pick(this.state, ["address", 'account', 'index', 'coin', 'segwit', 'p2pkh', 'p2sh', 'batchSize']), this.onUpdate, this.onDone, this.onError)
   }
 
   stop = () => {
@@ -110,7 +122,23 @@ class PathFinder extends Component {
           <FormGroup
             controlId="pathSearch"
           >
-            <ControlLabel>Coin</ControlLabel>
+            <ControlLabel>P2PKH</ControlLabel>
+            <FormControl
+              type="text"
+              value={this.state.p2pkh}
+              placeholder="Bitcoin = 0"
+              onChange={this.handleChangeP2pkh}
+              disabled={this.state.running || this.state.paused}
+            />
+            <ControlLabel>P2SH</ControlLabel>
+            <FormControl
+              type="text"
+              value={this.state.p2sh}
+              placeholder="Bitcoin = 0"
+              onChange={this.handleChangeP2sh}
+              disabled={this.state.running || this.state.paused}
+            />
+            <ControlLabel>Coin Type</ControlLabel>
             <FormControl
               type="text"
               value={this.state.coin}
@@ -156,7 +184,7 @@ class PathFinder extends Component {
           <Button bsSize="large" disabled={this.state.running} onClick={this.reset}>reset</Button>
         </ButtonToolbar>
         {this.state.done && this.state.address.length > 0 &&
-          <div className="result">The corresponding path is: {this.state.result[this.state.result.length-1].path}</div>
+          <div className="result">The corresponding path is: {this.state.result[this.state.result.length - 1].path}</div>
         }
         <div className="progress">Addresses scanned: {this.state.result.length}</div>
         <BootstrapTable height='400' data={this.state.result} striped={true} hover={true} pagination exportCSV>
