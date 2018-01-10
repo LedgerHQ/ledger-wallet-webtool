@@ -30,7 +30,7 @@ class PathFinder extends Component {
   }
 
   componentWillUnmount() {
-    if (this.state.running) {
+    if (this.state.running || this.state.paused) {
       this.terminate()
     }
     var state = {}
