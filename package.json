@@ -1,0 +1,24 @@
+{
+  "name": "ledger-wallet-webtool",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "bitcoinjs-lib": "^3.3.1",
+    "bootstrap": "^3.3.7",
+    "bs58": "^4.0.1",
+    "ledgerco": "^1.2.1",
+    "lodash": "^4.17.4",
+    "react": "^16.2.0",
+    "react-bootstrap": "^0.31.5",
+    "react-bootstrap-table": "^4.2.0",
+    "react-dom": "^16.2.0",
+    "react-router-dom": "^4.2.2",
+    "react-scripts": "1.0.17"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
+  }
+}
