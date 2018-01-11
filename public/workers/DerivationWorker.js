@@ -1,32 +1,59 @@
-importScripts('/bitcoinjs.min.js')
+importScripts("/bitcoinjs.min.js");
 
-onmessage = function (params) {
-  console.log(params.data)
-  var hdnode = bitcoin.HDNode.fromBase58(params.data.xpub58, params.data.network)
-  var response = []
-  var index = 0
-  var prefix = "44'/" + params.data.coin + "'" + "/" + params.data.account + "'/"
-  var nextPath = function (i) {
+var pubKeyToAddress = (pubKey, scriptVersion, segwit) => {
+  if (segwit) {
+    var script = [0x00, 0x14].concat(bitcoin.crypto.hash160(pubKey));
+    var hash160 = bitcoin.crypto.hash160(script);
+  } else {
+    var hash160 = bitcoin.crypto.hash160(pubKey);
+  }
+  return bitcoin.address.toBase58Check(hash160, scriptVersion);
+};
+
+var getPublicAddress = (hdnode, path, script, segwit) => {
+  hdnode = hdnode.derivePath(path);
+  return pubKeyToAddress(
+    hdnode.getPublicKeyBuffer().toString("hex"),
+    script,
+    segwit
+  );
+};
+
+onmessage = function(params) {
+  var hdnode = bitcoin.HDNode.fromBase58(
+    params.data.xpub58,
+    params.data.network
+  );
+  var response = [];
+  var script = params.data.segwit ? params.data.p2sh : params.data.p2pkh;
+  var index = 0;
+  var prefix =
+    "44'/" + params.data.coin + "'" + "/" + params.data.account + "'/";
+  var nextPath = function(i) {
     if (i <= 0x7fffffff) {
       for (var j = 0; j < 2; j++) {
-        index++
-        var path = j + "/" + i
-        var res = hdnode.derivePath(path)
-        response.push({ index, path: prefix + path, address: res.getAddress() })
-        if (res.getAddress() == params.data.address) {
-          postMessage({ done: true, response })
-          close()
+        var path = j + "/" + i;
+        var address = getPublicAddress(
+          hdnode,
+          path,
+          script,
+          params.data.segwit
+        );
+        response.push({ index: i, path: prefix + path, address });
+        if (address == params.data.address) {
+          postMessage({ done: true, response });
+          close();
         } else if (response.length > params.data.batchSize - 1) {
-          postMessage({ response })
-          response = []
+          postMessage({ response });
+          response = [];
         }
         if (j == 1) {
-          nextPath(++i)
+          nextPath(++i);
         }
       }
     } else {
-      postMessage({ failed: true, response })
+      postMessage({ failed: true, response });
     }
-  }
-  nextPath(params.data.index)
-}
+  };
+  nextPath(params.data.index);
+};
