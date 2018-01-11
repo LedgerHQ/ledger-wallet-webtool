@@ -30,7 +30,7 @@ class PathFinder extends Component {
         coin: 0,
         index: 0,
         segwit: false,
-        p2sh: 0,
+        p2sh: 5,
         p2pkh: 0
       };
     }
@@ -199,6 +199,7 @@ class PathFinder extends Component {
             />
             <Checkbox
               onChange={this.handleChangeSegwit}
+              checked={this.state.segwit}
               disabled={this.state.running || this.state.paused}
             >
               Segwit

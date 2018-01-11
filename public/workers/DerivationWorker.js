@@ -2,7 +2,9 @@ importScripts("/bitcoinjs.min.js");
 
 var pubKeyToAddress = (pubKey, scriptVersion, segwit) => {
   if (segwit) {
-    var script = [0x00, 0x14].concat(bitcoin.crypto.hash160(pubKey));
+    var script = [0x00, 0x14].concat(
+      Array.from(bitcoin.crypto.hash160(pubKey))
+    );
     var hash160 = bitcoin.crypto.hash160(script);
   } else {
     var hash160 = bitcoin.crypto.hash160(pubKey);
