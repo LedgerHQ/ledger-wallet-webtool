@@ -38,8 +38,8 @@ class PathFinder extends Component {
 
   componentWillUnmount() {
     var state = {};
+    this.terminate && this.terminate();
     if (this.state.running || this.state.paused) {
-      this.terminate();
       Object.assign(state, this.state, { running: false, paused: true });
     } else {
       Object.assign(state, this.state);
