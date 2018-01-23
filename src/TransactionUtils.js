@@ -84,7 +84,7 @@ var createVarint = value => {
 
 var toScriptByteString = amount => {
   var hex;
-  hex = _.str.lpad(amount.toString(16), 16, "0");
+  hex = _.padStart(amount.toString(16), 16, "0");
   hex = hex
     .match(/../g)
     .reverse()
@@ -149,8 +149,7 @@ var createOutputScript = function(recipientAddress, amount, coin) {
       new Buffer.from([hash160.length]),
       hash160,
       OP_EQUALVERIFY,
-      OP_CHECKSIG,
-      OP_RETURN
+      OP_CHECKSIG
     ]);
     return Buffer.concat([createVarint(script.length), script]);
   };
@@ -166,7 +165,6 @@ var createOutputScript = function(recipientAddress, amount, coin) {
   };
 
   var numberOfOutputs = 1;
-
   outputScript = Buffer.concat([
     createVarint(numberOfOutputs),
     toScriptByteString(amount),
@@ -186,7 +184,7 @@ var createOutputScript = function(recipientAddress, amount, coin) {
   return outputScript;
 };
 
-export var createPaymentTransaction = (
+export var createPaymentTransaction = async (
   recipientAddress,
   amount,
   utxos,
@@ -195,32 +193,38 @@ export var createPaymentTransaction = (
 ) => {
   var indexes = [];
   var apiCalls = [];
-  var btc = new AppBtc(Transport);
-  for (var h in Object.keys(utxos)) {
-    for (var i in Object.keys(utxos[h])) {
-      indexes.push(i);
+  const devices = await Transport.list();
+  if (devices.length === 0) throw "no device";
+  const transport = await Transport.open(devices[0]);
+  const btc = new AppBtc(transport);
+  Object.keys(utxos).forEach(h => {
+    Object.keys(utxos[h]).forEach(i => {
+      indexes.push(parseInt(i));
       var path = "/" + Networks[coin].apiName + "/transactions/" + h + "/hex";
       apiCalls.push(
-        fetch(path).then(res => {
-          res.json().then(data => {
-            return btc.splitTransaction(data.hex);
-          });
-        })
+        fetch(path)
+          .then(res => res.json())
+          .then(data => btc.splitTransaction(data[0].hex))
       );
-    }
-  }
-  Promise.all(apiCalls).then(txs => {
-    var inputs = _.zip(txs, indexes);
-    var outputScript = createOutputScript(recipientAddress, amount);
-    btc
-      .createPaymentTransactionNew(
-        inputs,
-        Array(indexes.length).fill(path),
-        undefined,
-        outputScript.toString("hex")
-      )
-      .then(res => {
-        console.log("tx created", res);
-      });
+    });
   });
+  var txs = await Promise.all(apiCalls);
+  var inputs = _.zip(txs, indexes);
+  var outputScript = createOutputScript(recipientAddress, amount, coin);
+  const res = await btc.createPaymentTransactionNew(
+    inputs,
+    Array(indexes.length).fill(path),
+    undefined,
+    outputScript.toString("hex")
+  );
+  return res;
+};
+
+export const findAddress = async path => {
+  const devices = await Transport.list();
+  if (devices.length === 0) throw "no device";
+  const transport = await Transport.open(devices[0]);
+  const btc = new AppBtc(transport);
+  var pub = await btc.getWalletPublicKey(path);
+  return pub.bitcoinAddress;
 };
