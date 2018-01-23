@@ -4,9 +4,9 @@
   "private": true,
   "proxy": "https://api.ledgerwallet.com/blockchain/v2/",
   "dependencies": {
-    "@ledgerhq/hw-app-btc": "^2.0.1",
-    "@ledgerhq/hw-transport-u2f": "^2.0.1",
-    "bitcoinjs-lib": "^3.3.1",
+    "@ledgerhq/hw-app-btc": "^2.1.0",
+    "@ledgerhq/hw-transport-u2f": "^2.1.1",
+    "bitcoinjs-lib": "^3.3.2",
     "bootstrap": "^3.3.7",
     "bs58": "^4.0.1",
     "buffer": "^5.0.8",
@@ -14,7 +14,7 @@
     "lodash": "^4.17.4",
     "react": "^16.2.0",
     "react-bootstrap": "^0.31.5",
-    "react-bootstrap-table": "^4.2.0",
+    "react-bootstrap-table": "^4.3.1",
     "react-dom": "^16.2.0",
     "react-router-dom": "^4.2.2",
     "react-scripts": "1.0.17"
