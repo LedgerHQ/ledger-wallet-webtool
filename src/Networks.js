@@ -1,4 +1,5 @@
 const Coins = {
+  //todo, change networks from coin number to name + add ticker and handle segwit flag
   0: {
     apiName: "btc",
     unit: "satoshi",
@@ -18,12 +19,14 @@ const Coins = {
       pubKeyHash: 0,
       scriptHash: 5,
       wif: 128
-    }
+    },
+    isSegwitSupported: true,
+    handleFeePerByte: true
   },
   1: {
     apiName: "btc_testnet",
     unit: "satoshi",
-    name: "btc_testnet",
+    name: "btc testnet",
     bip44: 1,
     p2pkh: 111,
     p2sh: 196,
@@ -39,7 +42,9 @@ const Coins = {
       pubKeyHash: 111,
       scriptHash: 196,
       wif: 239
-    }
+    },
+    isSegwitSupported: true,
+    handleFeePerByte: true
   }
 };
 
