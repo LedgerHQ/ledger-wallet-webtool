@@ -1,4 +1,4 @@
-import Dongle from "./Dongle";
+import Dongle from "./libs/Dongle";
 import Networks from "./Networks";
 import bitcoin from "bitcoinjs-lib";
 import bs58 from "bs58";
