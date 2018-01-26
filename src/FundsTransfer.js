@@ -29,13 +29,14 @@ class FundsTransfer extends Component {
       segwit: false,
       fees: 0,
       customFees: 0,
+      empty: false,
       standardFees: {
         1: 3000,
         3: 2000,
         6: 1000
       },
       balance: 0,
-      path: "44'/1'/1'/0/1",
+      path: "44'/1'/0'/0/26",
       sent: false,
       utxos: {},
       balance: {},
@@ -110,6 +111,7 @@ class FundsTransfer extends Component {
     var f = this.getFees();
     var d = new Promise((resolve, reject) => {
       var txs = [];
+      var spent = {};
       findAddress(
         this.state.path,
         this.state.segwit,
@@ -132,17 +134,31 @@ class FundsTransfer extends Component {
                     txs = txs.concat(data.txs);
                     var utxos = {};
                     txs.forEach(tx => {
+                      console.log(tx.hash);
                       tx.outputs.forEach(output => {
                         if (output.address === address) {
-                          if (!utxos[tx.hash]) {
-                            utxos[tx.hash] = {};
+                          if (!spent[tx.hash]) {
+                            spent[tx.hash] = {};
                           }
-                          utxos[tx.hash][output.output_index] = tx;
+                          if (!spent[tx.hash][output.output_index]) {
+                            if (!utxos[tx.hash]) {
+                              utxos[tx.hash] = {};
+                            }
+                            utxos[tx.hash][output.output_index] = tx;
+                          }
                         }
                       });
+
                       tx.inputs.forEach(input => {
                         if (input.address === address) {
-                          delete utxos[input.output_hash][input.output_index];
+                          if (utxos.hasOwnProperty(input.output_hash)) {
+                            delete utxos[input.output_hash][input.output_index];
+                          } else {
+                            if (!spent[input.output_hash]) {
+                              spent[input.output_hash] = {};
+                            }
+                            spent[input.output_hash][input.output_index] = true;
+                          }
                         }
                       });
                     });
@@ -186,20 +202,31 @@ class FundsTransfer extends Component {
         }
       }
     }
-    this.setState({
-      txSize: Networks[this.state.coin].handleFeePerByte
-        ? estimateTransactionSize(inputs, 1, this.state.segwit).max
-        : estimateTransactionSize(inputs, 1, this.state.segwit).max / 1000,
-      prepared: true,
-      running: false,
-      utxos: utxos,
-      balance: balance,
-      address: address,
-      customFees: this.state.standardFees[6],
-      fees:
-        estimateTransactionSize(inputs, 1, this.state.segwit).max *
-        this.state.standardFees[6]
-    });
+    if (balance <= 0) {
+      this.setState({
+        empty: true,
+        prepared: true,
+        running: false,
+        balance: balance,
+        address: address
+      });
+    } else {
+      this.setState({
+        empty: false,
+        txSize: Networks[this.state.coin].handleFeePerByte
+          ? estimateTransactionSize(inputs, 1, this.state.segwit).max
+          : estimateTransactionSize(inputs, 1, this.state.segwit).max / 1000,
+        prepared: true,
+        running: false,
+        utxos: utxos,
+        balance: balance,
+        address: address,
+        customFees: this.state.standardFees[6],
+        fees:
+          estimateTransactionSize(inputs, 1, this.state.segwit).max *
+          this.state.standardFees[6]
+      });
+    }
   };
 
   send = () => {
@@ -307,48 +334,52 @@ class FundsTransfer extends Component {
               The address {this.state.address} has {this.state.balance}{" "}
               {Networks[this.state.coin].unit} on it.
             </div>
-            <form>
-              <ControlLabel>Destination</ControlLabel>
-              <FormControl
-                type="text"
-                value={this.state.destination}
-                placeholder="Address to send to"
-                onChange={this.handleChangeDestination}
-                disabled={this.state.running}
-              />
-              <ControlLabel>
-                Fees per{" "}
-                {Networks[this.state.coin].handleFeePerByte
-                  ? "byte"
-                  : "kilo byte"}
-              </ControlLabel>
-              <FormControl
-                type="text"
-                value={this.state.customFees}
-                onChange={this.handleChangeFees}
-                disabled={this.state.running}
-              />
-            </form>
-            <div className="feesIndication">
-              SLOW : {this.state.standardFees[6]} <br />
-              NORMAL : {this.state.standardFees[3]} <br />
-              FAST : {this.state.standardFees[1]}
-            </div>
-            <div className="amount">
-              ESTIMATED TRANSACTION COST Sending :{" "}
-              {this.state.balance - this.state.fees} <br />
-              Fees : {this.state.fees} <br />
-            </div>
-            <ButtonToolbar>
-              <Button
-                bsStyle="primary"
-                bsSize="large"
-                disabled={this.state.running}
-                onClick={this.send}
-              >
-                Send
-              </Button>
-            </ButtonToolbar>
+            {!this.state.empty && (
+              <div>
+                <form>
+                  <ControlLabel>Destination</ControlLabel>
+                  <FormControl
+                    type="text"
+                    value={this.state.destination}
+                    placeholder="Address to send to"
+                    onChange={this.handleChangeDestination}
+                    disabled={this.state.running}
+                  />
+                  <ControlLabel>
+                    Fees per{" "}
+                    {Networks[this.state.coin].handleFeePerByte
+                      ? "byte"
+                      : "kilo byte"}
+                  </ControlLabel>
+                  <FormControl
+                    type="text"
+                    value={this.state.customFees}
+                    onChange={this.handleChangeFees}
+                    disabled={this.state.running}
+                  />
+                </form>
+                <div className="feesIndication">
+                  SLOW : {this.state.standardFees[6]} <br />
+                  NORMAL : {this.state.standardFees[3]} <br />
+                  FAST : {this.state.standardFees[1]}
+                </div>
+                <div className="amount">
+                  ESTIMATED TRANSACTION COST Sending :{" "}
+                  {this.state.balance - this.state.fees} <br />
+                  Fees : {this.state.fees} <br />
+                </div>
+                <ButtonToolbar>
+                  <Button
+                    bsStyle="primary"
+                    bsSize="large"
+                    disabled={this.state.running}
+                    onClick={this.send}
+                  >
+                    Send
+                  </Button>
+                </ButtonToolbar>
+              </div>
+            )}
           </div>
         )}
       </div>
