@@ -204,59 +204,46 @@ export var findPath = (params, onUpdate, onDone, onError) => {
   return terminate;
 };
 
-export var findAddress = (path, segwit, coin, onError) => {
-  var d = new Promise((resolve, reject) => {
-    return Dongle.init()
-      .then(comm => {
-        Dongle.setCoinVersion(comm, Networks[coin]).then(res => {
-          initialize(
-            path.split("/")[1].replace("'", ""),
-            path.split("/")[2].replace("'", ""),
-            segwit
-          ).then(xpub58 => {
-            console.log("success initialized", xpub58);
+export var findAddress = async (path, segwit, coin, onError) => {
+  try {
+    var comm = await Dongle.init();
+    await Dongle.setCoinVersion(comm, Networks[coin]);
+    const xpub58 = await initialize(
+      path.split("/")[1].replace("'", ""),
+      path.split("/")[2].replace("'", ""),
+      segwit
+    );
+    var script = segwit
+      ? Networks[coin].bitcoinjs.scriptHash
+      : Networks[coin].bitcoinjs.pubKeyHash;
+    var hdnode = bitcoin.HDNode.fromBase58(xpub58, Networks[coin].bitcoinjs);
+    var pubKeyToSegwitAddress = (pubKey, scriptVersion, segwit) => {
+      var script = [0x00, 0x14].concat(
+        Array.from(bitcoin.crypto.hash160(pubKey))
+      );
+      var hash160 = bitcoin.crypto.hash160(script);
+      return bitcoin.address.toBase58Check(hash160, scriptVersion);
+    };
 
-            var pubKeyToSegwitAddress = (pubKey, scriptVersion, segwit) => {
-              var script = [0x00, 0x14].concat(
-                Array.from(bitcoin.crypto.hash160(pubKey))
-              );
-              var hash160 = bitcoin.crypto.hash160(script);
-              return bitcoin.address.toBase58Check(hash160, scriptVersion);
-            };
-
-            var getPublicAddress = (hdnode, path, script, segwit) => {
-              hdnode = hdnode.derivePath(
-                path
-                  .split("/")
-                  .splice(3, 2)
-                  .join("/")
-              );
-              if (!segwit) {
-                return hdnode.getAddress().toString();
-              } else {
-                return pubKeyToSegwitAddress(
-                  hdnode.getPublicKeyBuffer(),
-                  script,
-                  segwit
-                );
-              }
-            };
-
-            var script = segwit
-              ? Networks[coin].bitcoinjs.scriptHash
-              : Networks[coin].bitcoinjs.pubKeyHash;
-            var hdnode = bitcoin.HDNode.fromBase58(
-              xpub58,
-              Networks[coin].bitcoinjs
-            );
-
-            resolve(getPublicAddress(hdnode, path, script, segwit));
-          });
-        });
-      })
-      .catch(e => {
-        onError("Devices unresponsive");
-      });
-  });
-  return d;
+    var getPublicAddress = (hdnode, path, script, segwit) => {
+      hdnode = hdnode.derivePath(
+        path
+          .split("/")
+          .splice(3, 2)
+          .join("/")
+      );
+      if (!segwit) {
+        return hdnode.getAddress().toString();
+      } else {
+        return pubKeyToSegwitAddress(
+          hdnode.getPublicKeyBuffer(),
+          script,
+          segwit
+        );
+      }
+    };
+    return await getPublicAddress(hdnode, path, script, segwit);
+  } catch (e) {
+    onError(e);
+  }
 };
