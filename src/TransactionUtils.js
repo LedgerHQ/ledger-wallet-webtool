@@ -1,10 +1,11 @@
 import Networks from "./Networks";
 import bitcoin from "bitcoinjs-lib";
 import bs58 from "bs58";
-import _ from "lodash";
+import padStart from "lodash/padStart";
 import Transport from "@ledgerhq/hw-transport-u2f";
 import AppBtc from "@ledgerhq/hw-app-btc";
 import { Buffer } from "buffer";
+import zip from "lodash/zip";
 
 export var estimateTransactionSize = (
   inputsCount,
@@ -63,17 +64,17 @@ export var estimateTransactionSize = (
 var addressToHash160WithNetwork = address => {
   var bytes = bs58.decode(address);
   var bytes = bytes.slice(0, bytes.length - 4);
-  return new Buffer.from(bytes);
+  return Buffer.from(bytes);
 };
 
 var createVarint = value => {
   if (value < 0xfd) {
-    return new Buffer.from([value]);
+    return Buffer.from([value]);
   }
   if (value <= 0xffff) {
-    return new Buffer.from([0xfd, value & 0xff, (value >> 8) & 0xff]);
+    return Buffer.from([0xfd, value & 0xff, (value >> 8) & 0xff]);
   }
-  return new Buffer.from([
+  return Buffer.from([
     0xfe,
     value & 0xff,
     (value >> 8) & 0xff,
@@ -84,12 +85,12 @@ var createVarint = value => {
 
 var toScriptByteString = amount => {
   var hex;
-  hex = _.padStart(amount.toString(16), 16, "0");
+  hex = padStart(amount.toString(16), 16, "0");
   hex = hex
     .match(/../g)
     .reverse()
     .join("");
-  return new Buffer.from(hex, "hex");
+  return Buffer.from(hex, "hex");
 };
 
 var createOutputScript = function(recipientAddress, amount, coin) {
@@ -103,12 +104,12 @@ var createOutputScript = function(recipientAddress, amount, coin) {
     P2shScript,
     PkScript,
     outputScript;
-  OP_DUP = new Buffer.from([0x76]);
-  OP_HASH160 = new Buffer.from([0xa9]);
-  OP_EQUAL = new Buffer.from([0x87]);
-  OP_EQUALVERIFY = new Buffer.from([0x88]);
-  OP_CHECKSIG = new Buffer.from([0xac]);
-  OP_RETURN = new Buffer.from([0x6a]);
+  OP_DUP = Buffer.from([0x76]);
+  OP_HASH160 = Buffer.from([0xa9]);
+  OP_EQUAL = Buffer.from([0x87]);
+  OP_EQUALVERIFY = Buffer.from([0x88]);
+  OP_CHECKSIG = Buffer.from([0xac]);
+  OP_RETURN = Buffer.from([0x6a]);
 
   /*
         Create the output script
@@ -119,7 +120,7 @@ var createOutputScript = function(recipientAddress, amount, coin) {
     var script;
     script = Buffer.concat([
       OP_HASH160,
-      new Buffer.from([hash160.length]),
+      Buffer.from([hash160.length]),
       hash160,
       OP_EQUAL
     ]);
@@ -146,7 +147,7 @@ var createOutputScript = function(recipientAddress, amount, coin) {
     script = Buffer.concat([
       OP_DUP,
       OP_HASH160,
-      new Buffer.from([hash160.length]),
+      Buffer.from([hash160.length]),
       hash160,
       OP_EQUALVERIFY,
       OP_CHECKSIG
@@ -158,8 +159,8 @@ var createOutputScript = function(recipientAddress, amount, coin) {
     var script;
     script = Buffer.concat([
       OP_RETURN,
-      new Buffer.from([data.length / 2]),
-      new Buffer.from(data, "hex")
+      Buffer.from([data.length / 2]),
+      Buffer.from(data, "hex")
     ]);
     return Buffer.concat([createVarint(script.length), script]);
   };
@@ -209,7 +210,7 @@ export var createPaymentTransaction = async (
     });
   });
   var txs = await Promise.all(apiCalls);
-  var inputs = _.zip(txs, indexes);
+  var inputs = zip(txs, indexes);
   var outputScript = createOutputScript(recipientAddress, amount, coin);
   const res = await btc.createPaymentTransactionNew(
     inputs,

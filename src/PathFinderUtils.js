@@ -2,7 +2,7 @@ import Dongle from "./libs/Dongle";
 import Networks from "./Networks";
 import bitcoin from "bitcoinjs-lib";
 import bs58 from "bs58";
-import _ from "lodash";
+import padStart from "lodash/padStart";
 
 function parseHexString(str) {
   var result = [];
@@ -98,9 +98,9 @@ function createXPUB(
   network
 ) {
   var xpub = toHexInt(network);
-  xpub = xpub + _.padStart(depth.toString(16), 2, "0");
-  xpub = xpub + _.padStart(fingerprint.toString(16), 8, "0");
-  xpub = xpub + _.padStart(childnum.toString(16), 8, "0");
+  xpub = xpub + padStart(depth.toString(16), 2, "0");
+  xpub = xpub + padStart(fingerprint.toString(16), 8, "0");
+  xpub = xpub + padStart(childnum.toString(16), 8, "0");
   xpub = xpub + chaincode;
   xpub = xpub + publicKey;
   return xpub;

@@ -1,5 +1,4 @@
-const Coins = {
-  //todo, change networks from coin number to name + add ticker and handle segwit flag
+const networks = {
   0: {
     apiName: "btc",
     unit: "satoshi",
@@ -48,4 +47,4 @@ const Coins = {
   }
 };
 
-export default Coins;
+export default networks;
