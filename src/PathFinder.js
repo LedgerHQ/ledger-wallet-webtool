@@ -10,7 +10,7 @@ import {
 } from "react-bootstrap";
 
 import { BootstrapTable, TableHeaderColumn } from "react-bootstrap-table";
-import findPath from "./PathFinderUtils";
+import { findPath } from "./PathFinderUtils";
 import _ from "lodash";
 
 class PathFinder extends Component {
@@ -24,22 +24,22 @@ class PathFinder extends Component {
         paused: false,
         running: false,
         batchSize: 10,
-        account: 0,
+        account: "0",
         address: "",
         result: [],
-        coin: 0,
-        index: 0,
-        segwit: false,
-        p2sh: 5,
-        p2pkh: 0
+        coin: "1",
+        index: "0",
+        segwit: true,
+        p2sh: "196",
+        p2pkh: "111"
       };
     }
   }
 
   componentWillUnmount() {
     var state = {};
+    this.terminate && this.terminate();
     if (this.state.running || this.state.paused) {
-      this.terminate();
       Object.assign(state, this.state, { running: false, paused: true });
     } else {
       Object.assign(state, this.state);
@@ -94,8 +94,6 @@ class PathFinder extends Component {
 
   reset = () => {
     this.setState({
-      account: 0,
-      address: "",
       index: 0,
       result: [],
       paused: false,
