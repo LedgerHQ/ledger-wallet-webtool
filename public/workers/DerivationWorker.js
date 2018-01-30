@@ -1,4 +1,4 @@
-importScripts("/bitcoinjs.min.js");
+importScripts("bitcoinjs.min.js");
 
 var pubKeyToSegwitAddress = (pubKey, scriptVersion, segwit) => {
   var script = [0x00, 0x14].concat(Array.from(bitcoin.crypto.hash160(pubKey)));

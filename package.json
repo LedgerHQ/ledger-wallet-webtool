@@ -1,11 +1,12 @@
 {
   "name": "ledger-wallet-webtool",
   "version": "0.1.0",
+  "homepage": "./",
   "private": true,
   "proxy": "https://api.ledgerwallet.com/blockchain/v2/",
   "dependencies": {
-    "@ledgerhq/hw-app-btc": "^2.1.0",
-    "@ledgerhq/hw-transport-u2f": "^2.1.1",
+    "@ledgerhq/hw-app-btc": "^2.1.2",
+    "@ledgerhq/hw-transport-u2f": "^2.1.2",
     "bitcoinjs-lib": "^3.3.2",
     "bootstrap": "^3.3.7",
     "bs58": "^4.0.1",
@@ -23,6 +24,11 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
+  },
+  "devDependencies": {
+    "gh-pages": "^1.1.0"
   }
 }
