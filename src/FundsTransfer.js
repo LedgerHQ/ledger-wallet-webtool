@@ -92,7 +92,10 @@ class FundsTransfer extends Component {
 
   getFees = () => {
     return new Promise((resolve, reject) => {
-      var path = Networks[this.state.coin].apiName + "/fees";
+      var path =
+        "https://api.ledgerwallet.com/blockchain/v2/" +
+        Networks[this.state.coin].apiName +
+        "/fees";
       fetch(path)
         .then(response => {
           response.json().then(data => {
@@ -121,7 +124,7 @@ class FundsTransfer extends Component {
         .then(address => {
           var blockHash = "";
           var apiPath =
-            "/" +
+            "https://api.ledgerwallet.com/blockchain/v2/" +
             Networks[this.state.coin].apiName +
             "/addresses/" +
             address +
@@ -242,7 +245,10 @@ class FundsTransfer extends Component {
         var body = JSON.stringify({
           tx: res
         });
-        var path = Networks[this.state.coin].apiName + "/transactions/send";
+        var path =
+          "https://api.ledgerwallet.com/blockchain/v2/" +
+          Networks[this.state.coin].apiName +
+          "/transactions/send";
         console.log("res", res);
         fetch(path, {
           headers: {
