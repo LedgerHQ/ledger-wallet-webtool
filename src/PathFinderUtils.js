@@ -158,35 +158,29 @@ export var findPath = (params, onUpdate, onDone, onError) => {
 
   Dongle.init()
     .then(comm => {
-      return Dongle.setCoinVersion(
-        comm,
-        Networks[parseInt(params.coin, 10)]
-      ).then(res => {
-        console.log("success set coin");
-        initialize(
-          parseInt(params.coin, 10),
-          parseInt(params.account, 10),
-          params.segwit
-        ).then(xpub58 => {
-          console.log("success initialized", xpub58);
-          params.xpub58 = xpub58;
-          params.network = Networks[parseInt(params.coin, 10)].bitcoinjs;
-          derivationWorker.onmessage = event => {
-            onUpdate(event.data.response);
-            if (event.data.done) {
-              onDone();
-            }
-            if (event.data.failed) {
-              onError("The address is not from this account");
-            }
-          };
-          derivationWorker.onerror = error => {
-            onError("Derivation error: " + error.message);
-            console.log(error);
-            derivationWorker.terminate();
-          };
-          derivationWorker.postMessage(params);
-        });
+      initialize(
+        parseInt(params.coin, 10),
+        parseInt(params.account, 10),
+        params.segwit
+      ).then(xpub58 => {
+        console.log("success initialized", xpub58);
+        params.xpub58 = xpub58;
+        params.network = Networks[parseInt(params.coin, 10)].bitcoinjs;
+        derivationWorker.onmessage = event => {
+          onUpdate(event.data.response);
+          if (event.data.done) {
+            onDone();
+          }
+          if (event.data.failed) {
+            onError("The address is not from this account");
+          }
+        };
+        derivationWorker.onerror = error => {
+          onError("Derivation error: " + error.message);
+          console.log(error);
+          derivationWorker.terminate();
+        };
+        derivationWorker.postMessage(params);
       });
     })
     .catch(e => {
