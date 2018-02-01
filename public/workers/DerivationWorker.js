@@ -22,8 +22,8 @@ onmessage = function(params) {
   );
   var response = [];
   var script = params.data.segwit
-    ? parseInt(params.data.p2sh, 10)
-    : parseInt(params.data.p2pkh, 10);
+    ? params.data.network.scriptHash
+    : params.data.network.pubKeyHash;
   var index = 0;
   var purpose = params.data.segwit ? "49'/" : "44'/";
   var prefix =

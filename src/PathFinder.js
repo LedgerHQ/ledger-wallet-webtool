@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import Networks from "./Networks";
 import {
   Button,
   Checkbox,
@@ -28,11 +29,10 @@ class PathFinder extends Component {
         account: "0",
         address: "",
         result: [],
+        coinPath: "1",
         coin: "1",
         index: "0",
         segwit: true,
-        p2sh: "196",
-        p2pkh: "111",
         error: false
       };
     }
@@ -61,20 +61,16 @@ class PathFinder extends Component {
     this.setState({ index: e.target.value });
   };
 
+  handleChangeCoinPath = e => {
+    this.setState({ coinPath: e.target.value });
+  };
+
   handleChangeCoin = e => {
     this.setState({ coin: e.target.value });
   };
 
   handleChangeSegwit = e => {
     this.setState({ segwit: !this.state.segwit });
-  };
-
-  handleChangeP2pkh = e => {
-    this.setState({ p2pkh: e.target.value });
-  };
-
-  handleChangeP2sh = e => {
-    this.setState({ p2sh: e.target.value });
   };
 
   onUpdate = e => {
@@ -116,10 +112,9 @@ class PathFinder extends Component {
         "address",
         "account",
         "index",
+        "coinPath",
         "coin",
         "segwit",
-        "p2pkh",
-        "p2sh",
         "batchSize"
       ]),
       this.onUpdate,
@@ -138,6 +133,16 @@ class PathFinder extends Component {
   };
 
   render() {
+    var coinSelect = [];
+    for (var coin in Networks) {
+      if (Networks.hasOwnProperty(coin)) {
+        coinSelect.push(
+          <option value={coin} key={coin} selected={coin === this.state.coin}>
+            {Networks[coin].name}
+          </option>
+        );
+      }
+    }
     var startName = "Start";
     if (this.state.paused) {
       startName = "Continue";
@@ -156,26 +161,21 @@ class PathFinder extends Component {
         This is Path finder
         <form>
           <FormGroup controlId="pathSearch">
-            <ControlLabel>P2PKH</ControlLabel>
+            <ControlLabel>Currency</ControlLabel>
             <FormControl
-              type="text"
-              value={this.state.p2pkh}
-              onChange={this.handleChangeP2pkh}
-              disabled={this.state.running || this.state.paused}
-            />
-            <ControlLabel>P2SH</ControlLabel>
-            <FormControl
-              type="text"
-              value={this.state.p2sh}
-              onChange={this.handleChangeP2sh}
-              disabled={this.state.running || this.state.paused}
-            />
-            <ControlLabel>Coin Type</ControlLabel>
-            <FormControl
-              type="text"
-              value={this.state.coin}
-              placeholder="Bitcoin = 0"
+              componentClass="select"
+              placeholder="select"
               onChange={this.handleChangeCoin}
+              disabled={this.state.running || this.state.paused}
+            >
+              {coinSelect}
+            </FormControl>
+            <ControlLabel>Coin Path</ControlLabel>
+            <FormControl
+              type="text"
+              value={this.state.coinPath}
+              placeholder="Bitcoin = 0"
+              onChange={this.handleChangeCoinPath}
               disabled={this.state.running || this.state.paused}
             />
             <ControlLabel>Address</ControlLabel>

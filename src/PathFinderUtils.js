@@ -106,7 +106,7 @@ function createXPUB(
   return xpub;
 }
 
-var initialize = function(coin, account, segwit) {
+var initialize = function(network, coin, account, segwit) {
   var purpose = segwit ? "49'/" : "44'/";
   var prevPath = purpose + coin + "'";
   return new Promise((resolve, reject) => {
@@ -124,7 +124,7 @@ var initialize = function(coin, account, segwit) {
             childnum,
             nodeData.chainCode,
             publicKey,
-            Networks[coin].xpub
+            Networks[network].xpub
           );
           var xpub58 = encodeBase58Check(xpub);
           resolve(xpub58);
@@ -159,13 +159,14 @@ export var findPath = (params, onUpdate, onDone, onError) => {
   Dongle.init()
     .then(comm => {
       initialize(
-        parseInt(params.coin, 10),
+        parseInt(params.coin),
+        parseInt(params.coinPath, 10),
         parseInt(params.account, 10),
         params.segwit
       ).then(xpub58 => {
         console.log("success initialized", xpub58);
         params.xpub58 = xpub58;
-        params.network = Networks[parseInt(params.coin, 10)].bitcoinjs;
+        params.network = Networks[params.coin].bitcoinjs;
         derivationWorker.onmessage = event => {
           onUpdate(event.data.response);
           if (event.data.done) {
