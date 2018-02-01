@@ -110,6 +110,7 @@ var createOutputScript = function(recipientAddress, amount, coin) {
   OP_EQUALVERIFY = Buffer.from([0x88]);
   OP_CHECKSIG = Buffer.from([0xac]);
   OP_RETURN = Buffer.from([0x6a]);
+  let p2sh = false;
 
   /*
         Create the output script
@@ -117,6 +118,7 @@ var createOutputScript = function(recipientAddress, amount, coin) {
        */
 
   P2shScript = function(hash160) {
+    p2sh = true;
     var script;
     script = Buffer.concat([
       OP_HASH160,
@@ -182,7 +184,7 @@ var createOutputScript = function(recipientAddress, amount, coin) {
       .concat(ledger.Amount.fromSatoshi(0).toScriptByteString())
       .concat(OpReturnScript(data));
   }*/
-  return outputScript;
+  return [outputScript, p2sh];
 };
 
 export var createPaymentTransaction = async (
@@ -192,8 +194,8 @@ export var createPaymentTransaction = async (
   path,
   coin
 ) => {
-  var indexes = [];
-  var apiCalls = [];
+  let indexes = [];
+  let apiCalls = [];
   const devices = await Transport.list();
   if (devices.length === 0) throw "no device";
   const transport = await Transport.open(devices[0]);
@@ -205,18 +207,27 @@ export var createPaymentTransaction = async (
       apiCalls.push(
         fetch(path)
           .then(res => res.json())
-          .then(data => btc.splitTransaction(data[0].hex))
+          .then(data =>
+            btc.splitTransaction(data[0].hex, Networks[coin].isSegwitSupported)
+          )
       );
     });
   });
-  var txs = await Promise.all(apiCalls);
-  var inputs = zip(txs, indexes);
-  var outputScript = createOutputScript(recipientAddress, amount, coin);
+  const txs = await Promise.all(apiCalls);
+  const inputs = zip(txs, indexes);
+  const [outputScript, p2sh] = createOutputScript(
+    recipientAddress,
+    amount,
+    coin
+  );
   const res = await btc.createPaymentTransactionNew(
     inputs,
     Array(indexes.length).fill(path),
     undefined,
-    outputScript.toString("hex")
+    outputScript.toString("hex"),
+    undefined,
+    undefined,
+    p2sh
   );
   return res;
 };

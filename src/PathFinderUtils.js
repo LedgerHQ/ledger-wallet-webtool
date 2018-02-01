@@ -204,6 +204,7 @@ export var findAddress = async (path, segwit, coin, onError) => {
     var comm = await Dongle.init();
     await Dongle.setCoinVersion(comm, Networks[coin]);
     const xpub58 = await initialize(
+      coin,
       path.split("/")[1].replace("'", ""),
       path.split("/")[2].replace("'", ""),
       segwit

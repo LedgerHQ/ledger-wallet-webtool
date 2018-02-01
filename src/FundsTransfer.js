@@ -39,7 +39,6 @@ class FundsTransfer extends Component {
       path: "44'/1'/0'/0/26",
       sent: false,
       utxos: {},
-      balance: {},
       txSize: 0
     };
   }
@@ -93,9 +92,8 @@ class FundsTransfer extends Component {
   getFees = () => {
     return new Promise((resolve, reject) => {
       var path =
-        "https://api.ledgerwallet.com/blockchain/v2/" +
-        Networks[this.state.coin].apiName +
-        "/fees";
+        //"https://api.ledgerwallet.com/blockchain/v2/" +
+        Networks[this.state.coin].apiName + "/fees";
       fetch(path)
         .then(response => {
           response.json().then(data => {
@@ -124,7 +122,7 @@ class FundsTransfer extends Component {
         .then(address => {
           var blockHash = "";
           var apiPath =
-            "https://api.ledgerwallet.com/blockchain/v2/" +
+            //"https://api.ledgerwallet.com/blockchain/v2/" +
             Networks[this.state.coin].apiName +
             "/addresses/" +
             address +
@@ -246,9 +244,8 @@ class FundsTransfer extends Component {
           tx: res
         });
         var path =
-          "https://api.ledgerwallet.com/blockchain/v2/" +
-          Networks[this.state.coin].apiName +
-          "/transactions/send";
+          //"https://api.ledgerwallet.com/blockchain/v2/" +
+          Networks[this.state.coin].apiName + "/transactions/send";
         console.log("res", res);
         fetch(path, {
           headers: {
