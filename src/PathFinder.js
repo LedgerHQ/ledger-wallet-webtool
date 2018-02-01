@@ -6,7 +6,8 @@ import {
   FormControl,
   FormGroup,
   ControlLabel,
-  ButtonToolbar
+  ButtonToolbar,
+  Alert
 } from "react-bootstrap";
 
 import { BootstrapTable, TableHeaderColumn } from "react-bootstrap-table";
@@ -31,7 +32,8 @@ class PathFinder extends Component {
         index: "0",
         segwit: true,
         p2sh: "196",
-        p2pkh: "111"
+        p2pkh: "111",
+        error: false
       };
     }
   }
@@ -89,7 +91,11 @@ class PathFinder extends Component {
 
   onError = e => {
     this.stop();
-    alert(e);
+    this.setState({ error: e });
+  };
+
+  dismiss = () => {
+    this.setState({ error: false });
   };
 
   reset = () => {
@@ -97,7 +103,8 @@ class PathFinder extends Component {
       index: 0,
       result: [],
       paused: false,
-      done: false
+      done: false,
+      error: false
     });
     localStorage.removeItem("LedgerPathFinder");
   };
@@ -220,13 +227,21 @@ class PathFinder extends Component {
             reset
           </Button>
         </ButtonToolbar>
-        {this.state.done &&
-          this.state.address.length > 0 && (
-            <div className="result">
-              The corresponding path is:{" "}
-              {this.state.result[this.state.result.length - 1].path}
-            </div>
+        <div className="alert">
+          {this.state.done &&
+            this.state.address.length > 0 && (
+              <Alert bsStyle="success">
+                <strong>Path found!</strong> The path for {this.state.address}{" "}
+                is {this.state.result[this.state.result.length - 1].path}
+              </Alert>
+            )}
+          {this.state.error && (
+            <Alert bsStyle="warning" onDismiss={this.dismiss}>
+              <strong>Oups!</strong>
+              <p>{this.state.error}</p>
+            </Alert>
           )}
+        </div>
         <div className="progress">
           Addresses scanned: {this.state.result.length}
         </div>
