@@ -44,6 +44,25 @@ const networks = {
     },
     isSegwitSupported: true,
     handleFeePerByte: true
+  },
+  128: {
+    apiName: "vtc",
+    unit: "satoshi",
+    name: "Vertcoin",
+    familly: 1,
+    xpub: 0x0488b21e,
+    bitcoinjs: {
+      bip32: {
+        public: 0x0488b21e,
+        private: 0x05358394
+      },
+      messagePrefix: "\x19Vertcoin Signed Message:\n",
+      pubKeyHash: 71,
+      scriptHash: 5,
+      wif: 128
+    },
+    isSegwitSupported: true,
+    handleFeePerByte: false
   }
 };
 
