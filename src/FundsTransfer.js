@@ -6,7 +6,8 @@ import {
   FormControl,
   FormGroup,
   ControlLabel,
-  ButtonToolbar
+  ButtonToolbar,
+  Alert
 } from "react-bootstrap";
 import Networks from "./Networks";
 import { findAddress } from "./PathFinderUtils";
@@ -14,6 +15,12 @@ import {
   estimateTransactionSize,
   createPaymentTransaction
 } from "./TransactionUtils";
+
+const VALIDATIONS = {
+  1: "fast",
+  3: "medium",
+  6: "slow"
+};
 
 class FundsTransfer extends Component {
   constructor(props) {
@@ -28,7 +35,8 @@ class FundsTransfer extends Component {
       onError: false,
       segwit: false,
       fees: 0,
-      customFees: 0,
+      customFees: false,
+      customFeesVal: 0,
       empty: false,
       standardFees: {
         1: 3000,
@@ -36,7 +44,7 @@ class FundsTransfer extends Component {
         6: 1000
       },
       balance: 0,
-      path: "44'/1'/0'/0/26",
+      path: "49'/1'/3'/0/2",
       sent: false,
       utxos: {},
       txSize: 0
@@ -76,12 +84,24 @@ class FundsTransfer extends Component {
   };
 
   handleChangeFees = e => {
-    if (e.target.value < this.state.balance) {
+    if (e.target.value && e.target.value < this.state.balance) {
       this.setState({
-        customFees: e.target.value,
+        customFees: false,
         fees: this.state.txSize * e.target.value
       });
     } else {
+      this.setState({
+        customFees: true
+      });
+    }
+  };
+
+  handleEditFees = e => {
+    if (e.target.value < this.state.balance) {
+      this.setState({
+        customFeesVal: e.target.value,
+        fees: this.state.txSize * e.target.value
+      });
     }
   };
 
@@ -222,7 +242,7 @@ class FundsTransfer extends Component {
         utxos: utxos,
         balance: balance,
         address: address,
-        customFees: this.state.standardFees[6],
+        customFeesVal: this.state.standardFees[6],
         fees:
           estimateTransactionSize(inputs, 1, this.state.segwit).max *
           this.state.standardFees[6]
@@ -279,6 +299,20 @@ class FundsTransfer extends Component {
       }
     }
 
+    let feeSelect = [];
+    Object.keys(VALIDATIONS).forEach(blocks => {
+      feeSelect.push(
+        <option value={this.state.standardFees[blocks]} key={blocks}>
+          {VALIDATIONS[blocks]} :{this.state.standardFees[blocks]}
+        </option>
+      );
+    });
+    feeSelect.push(
+      <option value={false} key={0}>
+        Custom fees
+      </option>
+    );
+
     return (
       <div className="FundsTransfer">
         <form>
@@ -333,12 +367,28 @@ class FundsTransfer extends Component {
 
         {this.state.prepared && (
           <div className="prepared">
-            <div className="balance">
-              The address {this.state.address} has {this.state.balance}{" "}
-              {Networks[this.state.coin].unit} on it.
+            <div className="alert">
+              {this.state.empty && (
+                <Alert bsStyle="warning">
+                  <strong>Empty address</strong>
+                  <p>
+                    The address {this.state.address} has no{" "}
+                    {Networks[this.state.coin].unit} on it.{" "}
+                  </p>
+                </Alert>
+              )}
             </div>
             {!this.state.empty && (
               <div>
+                <Alert bsStyle="success">
+                  <strong>Funds found!</strong>
+                  <p>
+                    The address {this.state.address} has{" "}
+                    {this.state.balance /
+                      10 ** Networks[this.state.coin].satoshi}{" "}
+                    {Networks[this.state.coin].unit} on it.
+                  </p>
+                </Alert>
                 <form>
                   <ControlLabel>Destination</ControlLabel>
                   <FormControl
@@ -355,21 +405,31 @@ class FundsTransfer extends Component {
                       : "kilo byte"}
                   </ControlLabel>
                   <FormControl
-                    type="text"
-                    value={this.state.customFees}
+                    componentClass="select"
+                    placeholder="select"
                     onChange={this.handleChangeFees}
                     disabled={this.state.running}
-                  />
+                  >
+                    {feeSelect}
+                  </FormControl>
+                  {this.state.customFees && (
+                    <FormControl
+                      type="text"
+                      value={this.state.customFeesVal}
+                      onChange={this.handleEditFees}
+                      disabled={this.state.running}
+                    />
+                  )}
                 </form>
-                <div className="feesIndication">
-                  SLOW : {this.state.standardFees[6]} <br />
-                  NORMAL : {this.state.standardFees[3]} <br />
-                  FAST : {this.state.standardFees[1]}
-                </div>
                 <div className="amount">
-                  ESTIMATED TRANSACTION COST Sending :{" "}
-                  {this.state.balance - this.state.fees} <br />
-                  Fees : {this.state.fees} <br />
+                  Total to receive :{" "}
+                  {(this.state.balance - this.state.fees) /
+                    10 ** Networks[this.state.coin].satoshi}{" "}
+                  {Networks[this.state.coin].unit} <br />
+                  Total fees :{" "}
+                  {this.state.fees /
+                    10 ** Networks[this.state.coin].satoshi}{" "}
+                  {Networks[this.state.coin].unit} <br />
                 </div>
                 <ButtonToolbar>
                   <Button

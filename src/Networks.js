@@ -1,8 +1,9 @@
 const networks = {
   0: {
     apiName: "btc",
-    unit: "satoshi",
+    unit: "BTC",
     name: "bitcoin",
+    satoshi: 8,
     bip44: 0,
     p2pkh: 0,
     p2sh: 5,
@@ -24,9 +25,10 @@ const networks = {
   },
   1: {
     apiName: "btc_testnet",
-    unit: "satoshi",
+    unit: "BTC",
     name: "btc testnet",
     bip44: 1,
+    satoshi: 8,
     p2pkh: 111,
     p2sh: 196,
     familly: 1,
@@ -47,7 +49,8 @@ const networks = {
   },
   128: {
     apiName: "vtc",
-    unit: "satoshi",
+    unit: "VTC",
+    satoshi: 8,
     name: "Vertcoin",
     familly: 1,
     xpub: 0x0488b21e,
