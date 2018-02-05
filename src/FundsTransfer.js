@@ -45,7 +45,6 @@ class FundsTransfer extends Component {
       },
       balance: 0,
       path: "49'/1'/3'/0/2",
-      sent: false,
       utxos: {},
       txSize: 0
     };
@@ -57,15 +56,15 @@ class FundsTransfer extends Component {
     this.setState({
       prepared: false,
       running: false,
-      done: false
+      done: false,
+      empty: false
     });
   };
 
   onError = e => {
     console.log(e);
-    alert("on error : " + e);
     this.setState({
-      onError: true,
+      onError: e,
       running: false,
       done: false
     });
@@ -76,7 +75,7 @@ class FundsTransfer extends Component {
   };
 
   handleChangePath = e => {
-    this.setState({ path: e.target.value });
+    this.setState({ path: e.target.value, done: false });
   };
 
   handleChangeSegwit = e => {
@@ -128,7 +127,12 @@ class FundsTransfer extends Component {
   };
 
   prepare = () => {
-    this.setState({ running: true, prepared: false });
+    this.setState({
+      running: true,
+      prepared: false,
+      done: false,
+      empty: false
+    });
     var f = this.getFees();
     var d = new Promise((resolve, reject) => {
       var txs = [];
@@ -149,45 +153,44 @@ class FundsTransfer extends Component {
             "/transactions?noToken=true";
           var iterate = (blockHash = "") => {
             fetch(apiPath + blockHash)
-              .then(response => {
-                response.json().then(data => {
-                  if (!data.truncated) {
-                    txs = txs.concat(data.txs);
-                    var utxos = {};
-                    txs.forEach(tx => {
-                      console.log(tx.hash);
-                      tx.outputs.forEach(output => {
-                        if (output.address === address) {
-                          if (!spent[tx.hash]) {
-                            spent[tx.hash] = {};
-                          }
-                          if (!spent[tx.hash][output.output_index]) {
-                            if (!utxos[tx.hash]) {
-                              utxos[tx.hash] = {};
-                            }
-                            utxos[tx.hash][output.output_index] = tx;
-                          }
+              .then(response => response.json())
+              .then(data => {
+                if (!data.truncated) {
+                  txs = txs.concat(data.txs);
+                  var utxos = {};
+                  txs.forEach(tx => {
+                    console.log(tx.hash);
+                    tx.outputs.forEach(output => {
+                      if (output.address === address) {
+                        if (!spent[tx.hash]) {
+                          spent[tx.hash] = {};
                         }
-                      });
-
-                      tx.inputs.forEach(input => {
-                        if (input.address === address) {
-                          if (utxos.hasOwnProperty(input.output_hash)) {
-                            delete utxos[input.output_hash][input.output_index];
-                          } else {
-                            if (!spent[input.output_hash]) {
-                              spent[input.output_hash] = {};
-                            }
-                            spent[input.output_hash][input.output_index] = true;
+                        if (!spent[tx.hash][output.output_index]) {
+                          if (!utxos[tx.hash]) {
+                            utxos[tx.hash] = {};
                           }
+                          utxos[tx.hash][output.output_index] = tx;
                         }
-                      });
+                      }
                     });
-                    resolve([utxos, address]);
-                  } else {
-                    iterate(data.txs[data.txs.length - 1].block.hash);
-                  }
-                });
+
+                    tx.inputs.forEach(input => {
+                      if (input.address === address) {
+                        if (utxos.hasOwnProperty(input.output_hash)) {
+                          delete utxos[input.output_hash][input.output_index];
+                        } else {
+                          if (!spent[input.output_hash]) {
+                            spent[input.output_hash] = {};
+                          }
+                          spent[input.output_hash][input.output_index] = true;
+                        }
+                      }
+                    });
+                  });
+                  resolve([utxos, address]);
+                } else {
+                  iterate(data.txs[data.txs.length - 1].block.hash);
+                }
               })
               .catch(e => {
                 this.onError(e);
@@ -251,7 +254,7 @@ class FundsTransfer extends Component {
   };
 
   send = () => {
-    this.setState({ running: true });
+    this.setState({ running: true, done: false });
     createPaymentTransaction(
       this.state.destination,
       this.state.balance - this.state.fees,
@@ -274,17 +277,17 @@ class FundsTransfer extends Component {
           },
           method: "post",
           body
-        }).then(res => {
-          this.onSent();
-        });
+        })
+          .then(res => res.json())
+          .then(data => this.onSent(data.result));
       })
       .catch(e => {
         this.onError(e);
       });
   };
 
-  onSent = () => {
-    this.setState({ prepared: false, running: false, sent: true });
+  onSent = tx => {
+    this.setState({ prepared: false, running: false, done: tx });
   };
 
   render() {
@@ -315,6 +318,31 @@ class FundsTransfer extends Component {
 
     return (
       <div className="FundsTransfer">
+        <div className="alert">
+          {this.state.error && (
+            <Alert bsStyle="warning">
+              <strong>Oups!</strong>
+              <p>{this.state.error}</p>
+            </Alert>
+          )}
+          {this.state.empty && (
+            <Alert bsStyle="warning">
+              <strong>Empty address</strong>
+              <p>
+                The address {this.state.address} has no{" "}
+                {Networks[this.state.coin].unit} on it.{" "}
+              </p>
+            </Alert>
+          )}
+          {this.state.done && (
+            <Alert bsStyle="success">
+              <strong>Transaction broadcasted!</strong>
+              <p>
+                Please check online for confirmations. TX : {this.state.done}
+              </p>
+            </Alert>
+          )}
+        </div>
         <form>
           <FormGroup controlId="FundsTransfer">
             <ControlLabel>Currency</ControlLabel>
@@ -367,17 +395,6 @@ class FundsTransfer extends Component {
 
         {this.state.prepared && (
           <div className="prepared">
-            <div className="alert">
-              {this.state.empty && (
-                <Alert bsStyle="warning">
-                  <strong>Empty address</strong>
-                  <p>
-                    The address {this.state.address} has no{" "}
-                    {Networks[this.state.coin].unit} on it.{" "}
-                  </p>
-                </Alert>
-              )}
-            </div>
             {!this.state.empty && (
               <div>
                 <Alert bsStyle="success">

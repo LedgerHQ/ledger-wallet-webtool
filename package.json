@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "homepage": "./",
   "private": true,
+  "proxy": "https://api.ledgerwallet.com/blockchain/v2/",
   "dependencies": {
-    "@ledgerhq/hw-app-btc": "^2.1.2",
+    "@ledgerhq/hw-app-btc": "2.2.0",
     "@ledgerhq/hw-transport-u2f": "^2.1.2",
     "bitcoinjs-lib": "^3.3.2",
     "bootstrap": "^3.3.7",
