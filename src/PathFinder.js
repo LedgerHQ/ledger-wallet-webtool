@@ -50,7 +50,7 @@ class PathFinder extends Component {
   }
 
   handleChangeAddress = e => {
-    this.setState({ address: e.target.value });
+    this.setState({ address: e.target.value.replace(/\s/g, "") });
   };
 
   handleChangeAccount = e => {

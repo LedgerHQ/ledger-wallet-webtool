@@ -71,11 +71,11 @@ class FundsTransfer extends Component {
   };
 
   handleChangeDestination = e => {
-    this.setState({ destination: e.target.value });
+    this.setState({ destination: e.target.value.replace(/\s/g, "") });
   };
 
   handleChangePath = e => {
-    this.setState({ path: e.target.value, done: false });
+    this.setState({ path: e.target.value.replace(/\s/g, ""), done: false });
   };
 
   handleChangeSegwit = e => {
