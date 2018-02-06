@@ -126,7 +126,8 @@ class FundsTransfer extends Component {
     });
   };
 
-  prepare = () => {
+  prepare = e => {
+    e.preventDefault();
     this.setState({
       running: true,
       prepared: false,
@@ -343,7 +344,7 @@ class FundsTransfer extends Component {
             </Alert>
           )}
         </div>
-        <form>
+        <form onSubmit={this.prepare}>
           <FormGroup controlId="FundsTransfer">
             <ControlLabel>Currency</ControlLabel>
             <FormControl
@@ -371,27 +372,27 @@ class FundsTransfer extends Component {
             />
             <FormControl.Feedback />
           </FormGroup>
+          <ButtonToolbar>
+            {!this.state.prepared && (
+              <Button
+                bsSize="large"
+                disabled={this.state.running}
+                onClick={this.prepare}
+              >
+                Recover Path
+              </Button>
+            )}
+            {this.state.prepared && (
+              <Button
+                bsSize="large"
+                disabled={this.state.running}
+                onClick={this.reset}
+              >
+                Change Path
+              </Button>
+            )}
+          </ButtonToolbar>
         </form>
-        <ButtonToolbar>
-          {!this.state.prepared && (
-            <Button
-              bsSize="large"
-              disabled={this.state.running}
-              onClick={this.prepare}
-            >
-              Recover Path
-            </Button>
-          )}
-          {this.state.prepared && (
-            <Button
-              bsSize="large"
-              disabled={this.state.running}
-              onClick={this.reset}
-            >
-              Change Path
-            </Button>
-          )}
-        </ButtonToolbar>
 
         {this.state.prepared && (
           <div className="prepared">
