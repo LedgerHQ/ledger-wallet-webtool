@@ -39,17 +39,9 @@ function hasUInt16CoinVersion(version) {
 }
 
 Dongle.init = function() {
-  return new Promise((resolve, reject) => {
-    ledger.comm_u2f
-      .create_async(2)
-      .then(function(comm) {
-        Dongle.btc = new ledger.btc(comm);
-        resolve(comm);
-      })
-      .catch(function(err) {
-        console.log("error init");
-        reject(err);
-      });
+  return ledger.comm_u2f.create_async(2, true).then(function(comm) {
+    Dongle.btc = new ledger.btc(comm);
+    return comm;
   });
 };
 
@@ -76,20 +68,12 @@ const toU16IntHexString = function(e) {
 };
 
 Dongle.setCoinVersion = function(comm, coin) {
-  return new Promise((resolve, reject) => {
-    var [p2pkh, p2sh, fam] = [coin.p2pkh, coin.p2sh, coin.familly].map(x =>
-      toU16IntHexString(x)
-    );
-    comm
-      .exchange("e014000005" + p2pkh + p2sh + fam.substr(-2), [0x9000])
-      .then(function(response) {
-        resolve();
-      })
-      .catch(function(err) {
-        console.log("error setcoin ");
-        reject(err);
-      });
-  });
+  var [p2pkh, p2sh, fam] = [
+    coin.bitcoinjs.pubKeyHash,
+    coin.bitcoinjs.scriptHash,
+    coin.familly
+  ].map(x => toU16IntHexString(x));
+  return comm.exchange("e014000005" + p2pkh + p2sh + fam.substr(-2), [0x9000]);
 };
 
 export default Dongle;

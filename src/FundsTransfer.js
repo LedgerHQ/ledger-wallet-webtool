@@ -15,7 +15,7 @@ import {
   estimateTransactionSize,
   createPaymentTransaction
 } from "./TransactionUtils";
-
+import Errors from "./libs/Errors"
 const VALIDATIONS = {
   1: "fast",
   3: "medium",
@@ -31,9 +31,9 @@ class FundsTransfer extends Component {
       address: "",
       prepared: false,
       destination: "",
-      coin: "1",
-      onError: false,
-      segwit: false,
+      coin: "128",
+      error: false,
+      segwit: true,
       fees: 0,
       customFees: false,
       customFeesVal: 0,
@@ -44,7 +44,7 @@ class FundsTransfer extends Component {
         6: 1000
       },
       balance: 0,
-      path: "49'/1'/3'/0/2",
+      path: "49'/128'/0'/0/2",
       utxos: {},
       txSize: 0
     };
@@ -62,9 +62,8 @@ class FundsTransfer extends Component {
   };
 
   onError = e => {
-    console.log(e);
     this.setState({
-      onError: e,
+      error: e.toString(),
       running: false,
       done: false
     });
@@ -108,25 +107,19 @@ class FundsTransfer extends Component {
     this.setState({ coin: e.target.value });
   };
 
-  getFees = () => {
-    return new Promise((resolve, reject) => {
-      var path =
-        //"https://api.ledgerwallet.com/blockchain/v2/" +
-        Networks[this.state.coin].apiName + "/fees";
-      fetch(path)
-        .then(response => {
-          response.json().then(data => {
-            this.setState({ standardFees: data });
-            resolve(data);
-          });
-        })
-        .catch(e => {
-          this.onError(e);
-        });
-    });
+  getFees = async () => {
+    var path =
+      //"https://api.ledgerwallet.com/blockchain/v2/" +
+      Networks[this.state.coin].apiName + "/fees";
+    return await fetch(path /*, { mode: "no-cors" }*/)
+      .then(response => response.json())
+      .then(data => {
+        this.setState({ standardFees: data });
+        return data;
+      });
   };
 
-  prepare = e => {
+  prepare = async e => {
     e.preventDefault();
     this.setState({
       running: true,
@@ -134,87 +127,77 @@ class FundsTransfer extends Component {
       done: false,
       empty: false
     });
-    var f = this.getFees();
-    var d = new Promise((resolve, reject) => {
-      var txs = [];
-      var spent = {};
-      findAddress(
-        this.state.path,
-        this.state.segwit,
-        this.state.coin,
-        this.onError
-      )
-        .then(address => {
-          var blockHash = "";
-          var apiPath =
-            //"https://api.ledgerwallet.com/blockchain/v2/" +
-            Networks[this.state.coin].apiName +
-            "/addresses/" +
-            address +
-            "/transactions?noToken=true";
-          var iterate = (blockHash = "") => {
-            fetch(apiPath + blockHash)
-              .then(response => response.json())
-              .then(data => {
-                if (!data.truncated) {
-                  txs = txs.concat(data.txs);
-                  var utxos = {};
-                  txs.forEach(tx => {
-                    console.log(tx.hash);
-                    tx.outputs.forEach(output => {
-                      if (output.address === address) {
-                        if (!spent[tx.hash]) {
-                          spent[tx.hash] = {};
-                        }
-                        if (!spent[tx.hash][output.output_index]) {
-                          if (!utxos[tx.hash]) {
-                            utxos[tx.hash] = {};
+    try {
+      var f = await this.getFees();
+      var d = await new Promise((resolve, reject) => {
+        var txs = [];
+        var spent = {};
+        findAddress(this.state.path, this.state.segwit, this.state.coin).then(
+          address => {
+            var blockHash = "";
+            var apiPath =
+              //"https://api.ledgerwallet.com/blockchain/v2/" +
+              Networks[this.state.coin].apiName +
+              "/addresses/" +
+              address +
+              "/transactions?noToken=true";
+            var iterate = (blockHash = "") => {
+              fetch(apiPath + blockHash)
+                .then(response => response.json())
+                .then(data => {
+                  if (!data.truncated) {
+                    txs = txs.concat(data.txs);
+                    var utxos = {};
+                    txs.forEach(tx => {
+                      console.log(tx.hash);
+                      tx.outputs.forEach(output => {
+                        if (output.address === address) {
+                          if (!spent[tx.hash]) {
+                            spent[tx.hash] = {};
                           }
-                          utxos[tx.hash][output.output_index] = tx;
+                          if (!spent[tx.hash][output.output_index]) {
+                            if (!utxos[tx.hash]) {
+                              utxos[tx.hash] = {};
+                            }
+                            utxos[tx.hash][output.output_index] = tx;
+                          }
                         }
-                      }
-                    });
+                      });
 
-                    tx.inputs.forEach(input => {
-                      if (input.address === address) {
-                        if (utxos.hasOwnProperty(input.output_hash)) {
-                          delete utxos[input.output_hash][input.output_index];
-                        } else {
-                          if (!spent[input.output_hash]) {
-                            spent[input.output_hash] = {};
+                      tx.inputs.forEach(input => {
+                        if (input.address === address) {
+                          if (utxos.hasOwnProperty(input.output_hash)) {
+                            delete utxos[input.output_hash][input.output_index];
+                          } else {
+                            if (!spent[input.output_hash]) {
+                              spent[input.output_hash] = {};
+                            }
+                            spent[input.output_hash][input.output_index] = true;
                           }
-                          spent[input.output_hash][input.output_index] = true;
                         }
-                      }
+                      });
                     });
-                  });
-                  resolve([utxos, address]);
-                } else {
-                  iterate(data.txs[data.txs.length - 1].block.hash);
-                }
-              })
-              .catch(e => {
-                this.onError(e);
-              });
-          };
-          iterate();
+                    resolve([utxos, address]);
+                  } else {
+                    iterate(data.txs[data.txs.length - 1].block.hash);
+                  }
+                });
+            };
+            iterate();
+          }
+        ).catch((e) => {
+          reject(Errors.u2f)
         })
-        .catch(e => {
-          console.log("error: ", e);
-          reject(e);
-        });
-    });
-
-    Promise.all([d, f])
-      .then(d => {
-        this.onPrepared.apply(this, d[0]);
+      }).catch((e) => {
+        throw e
       })
-      .catch(e => {
-        this.onError(e);
-      });
+      this.onPrepared(d);
+    } catch (e) {
+      this.onError(e);
+    }
   };
 
-  onPrepared = (utxos, address) => {
+  onPrepared = ([utxos, address]) => {
     var balance = 0;
     var inputs = 0;
     for (var utxo in utxos) {

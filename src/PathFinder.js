@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import Networks from "./Networks";
+import Errors from "./libs/Errors";
 import {
   Button,
   Checkbox,
@@ -86,8 +87,7 @@ class PathFinder extends Component {
   };
 
   onError = e => {
-    this.stop();
-    this.setState({ error: e });
+    this.setState({ error: e.toString() });
   };
 
   dismiss = () => {
@@ -105,27 +105,34 @@ class PathFinder extends Component {
     localStorage.removeItem("LedgerPathFinder");
   };
 
-  start = () => {
+  start = async () => {
     this.setState({ running: true, paused: false });
-    this.terminate = findPath(
-      _.pick(this.state, [
-        "address",
-        "account",
-        "index",
-        "coinPath",
-        "coin",
-        "segwit",
-        "batchSize"
-      ]),
-      this.onUpdate,
-      this.onDone,
-      this.onError
-    );
+    try {
+      this.terminate = await findPath(
+        _.pick(this.state, [
+          "address",
+          "account",
+          "index",
+          "coinPath",
+          "coin",
+          "segwit",
+          "batchSize"
+        ]),
+        this.onUpdate,
+        this.onDone,
+        this.onError
+      );
+    } catch (e) {
+      this.onError(Errors.u2f);
+    }
   };
 
   stop = () => {
-    this.terminate();
-    this.setState({ running: false, paused: true });
+    this.terminate && this.terminate();
+    this.setState({
+      running: false,
+      paused: true
+    });
   };
 
   save = () => {
@@ -236,7 +243,7 @@ class PathFinder extends Component {
               </Alert>
             )}
           {this.state.error && (
-            <Alert bsStyle="warning" onDismiss={this.dismiss}>
+            <Alert bsStyle="warning">
               <strong>Oups!</strong>
               <p>{this.state.error}</p>
             </Alert>
