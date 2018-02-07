@@ -194,6 +194,7 @@ export var createPaymentTransaction = async (
   path,
   coin
 ) => {
+  amount = Math.floor(amount);
   let indexes = [];
   let apiCalls = [];
   const devices = await Transport.list();
