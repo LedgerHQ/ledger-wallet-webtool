@@ -17,9 +17,9 @@ import {
 } from "./TransactionUtils";
 import Errors from "./libs/Errors";
 const VALIDATIONS = {
-  1: "fast",
+  6: "slow",
   3: "medium",
-  6: "slow"
+  1: "fast"
 };
 
 class FundsTransfer extends Component {
@@ -110,8 +110,9 @@ class FundsTransfer extends Component {
   getFees = async () => {
     var path =
       "https://api.ledgerwallet.com/blockchain/v2/" +
-      Networks[this.state.coin].apiName + "/fees";
-    return await fetch(path /*, { mode: "no-cors" }*/)
+      Networks[this.state.coin].apiName +
+      "/fees";
+    return await fetch(path)
       .then(response => response.json())
       .then(data => {
         this.setState({ standardFees: data });
@@ -258,7 +259,8 @@ class FundsTransfer extends Component {
       });
       var path =
         "https://api.ledgerwallet.com/blockchain/v2/" +
-        Networks[this.state.coin].apiName + "/transactions/send";
+        Networks[this.state.coin].apiName +
+        "/transactions/send";
       console.log("res", tx);
       let res = await fetch(path, {
         headers: {
@@ -299,7 +301,11 @@ class FundsTransfer extends Component {
     let feeSelect = [];
     Object.keys(VALIDATIONS).forEach(blocks => {
       feeSelect.push(
-        <option value={this.state.standardFees[blocks]} key={blocks}>
+        <option
+          value={this.state.standardFees[blocks]}
+          key={blocks}
+          selected={blocks == "6"}
+        >
           {VALIDATIONS[blocks]} :{this.state.standardFees[blocks]}
         </option>
       );
@@ -446,7 +452,11 @@ class FundsTransfer extends Component {
                   <Button
                     bsStyle="primary"
                     bsSize="large"
-                    disabled={this.state.running || !this.state.destination}
+                    disabled={
+                      this.state.running ||
+                      !this.state.destination ||
+                      !this.state.fees
+                    }
                     onClick={this.send}
                   >
                     Send
