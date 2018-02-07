@@ -1,5 +1,5 @@
+"use strict";
 import Networks from "./Networks";
-import bitcoin from "bitcoinjs-lib";
 import bs58 from "bs58";
 import padStart from "lodash/padStart";
 import Transport from "@ledgerhq/hw-transport-u2f";
@@ -62,8 +62,8 @@ export var estimateTransactionSize = (
 };
 
 var addressToHash160WithNetwork = address => {
-  var bytes = bs58.decode(address);
-  var bytes = bytes.slice(0, bytes.length - 4);
+  let bytes = bs58.decode(address);
+  bytes = bytes.slice(0, bytes.length - 4);
   return Buffer.from(bytes);
 };
 
@@ -100,7 +100,6 @@ var createOutputScript = function(recipientAddress, amount, coin) {
     OP_EQUALVERIFY,
     OP_HASH160,
     OP_RETURN,
-    OpReturnScript,
     P2shScript,
     PkScript,
     outputScript;
@@ -157,7 +156,7 @@ var createOutputScript = function(recipientAddress, amount, coin) {
     return Buffer.concat([createVarint(script.length), script]);
   };
 
-  OpReturnScript = function(data) {
+  /*OpReturnScript = function(data) {
     var script;
     script = Buffer.concat([
       OP_RETURN,
@@ -165,7 +164,7 @@ var createOutputScript = function(recipientAddress, amount, coin) {
       Buffer.from(data, "hex")
     ]);
     return Buffer.concat([createVarint(script.length), script]);
-  };
+  };*/
 
   var numberOfOutputs = 1;
   outputScript = Buffer.concat([
@@ -204,7 +203,12 @@ export var createPaymentTransaction = async (
   Object.keys(utxos).forEach(h => {
     Object.keys(utxos[h]).forEach(i => {
       indexes.push(parseInt(i));
-      var path = "/" + Networks[coin].apiName + "/transactions/" + h + "/hex";
+      var path =
+        "https://api.ledgerwallet.com/blockchain/v2/" +
+        Networks[coin].apiName +
+        "/transactions/" +
+        h +
+        "/hex";
       apiCalls.push(
         fetch(path)
           .then(res => res.json())

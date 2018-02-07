@@ -109,7 +109,7 @@ class FundsTransfer extends Component {
 
   getFees = async () => {
     var path =
-      //"https://api.ledgerwallet.com/blockchain/v2/" +
+      "https://api.ledgerwallet.com/blockchain/v2/" +
       Networks[this.state.coin].apiName + "/fees";
     return await fetch(path /*, { mode: "no-cors" }*/)
       .then(response => response.json())
@@ -137,7 +137,7 @@ class FundsTransfer extends Component {
           .then(address => {
             var blockHash = "";
             var apiPath =
-              //"https://api.ledgerwallet.com/blockchain/v2/" +
+              "https://api.ledgerwallet.com/blockchain/v2/" +
               Networks[this.state.coin].apiName +
               "/addresses/" +
               address +
@@ -257,7 +257,7 @@ class FundsTransfer extends Component {
         tx: tx
       });
       var path =
-        //"https://api.ledgerwallet.com/blockchain/v2/" +
+        "https://api.ledgerwallet.com/blockchain/v2/" +
         Networks[this.state.coin].apiName + "/transactions/send";
       console.log("res", tx);
       let res = await fetch(path, {

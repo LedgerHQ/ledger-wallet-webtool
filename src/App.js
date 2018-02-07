@@ -1,4 +1,4 @@
-import { Navbar, Nav, NavItem, Button } from "react-bootstrap";
+import { Navbar, Nav, NavItem } from "react-bootstrap";
 import React, { Component } from "react";
 import Home from "./Home";
 import PathFinder from "./PathFinder";

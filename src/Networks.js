@@ -15,7 +15,7 @@ const networks = {
         private: 76066276,
         public: 76067358
       },
-      messagePrefix: "\x18Bitcoin Signed Message:\n",
+      messagePrefix: "Bitcoin Signed Message:",
       pubKeyHash: 0,
       scriptHash: 5,
       wif: 128
@@ -39,7 +39,7 @@ const networks = {
         private: 70615956,
         public: 70617039
       },
-      messagePrefix: "\x18Bitcoin Signed Message:\n",
+      messagePrefix: "Bitcoin Signed Message:",
       pubKeyHash: 111,
       scriptHash: 196,
       wif: 239
@@ -59,7 +59,7 @@ const networks = {
         public: 0x0488b21e,
         private: 0x05358394
       },
-      messagePrefix: "\x19Vertcoin Signed Message:\n",
+      messagePrefix: "Vertcoin Signed Message:",
       pubKeyHash: 71,
       scriptHash: 5,
       wif: 128

@@ -1,3 +1,4 @@
+"use strict";
 import Dongle from "./libs/Dongle";
 import Networks from "./Networks";
 import bitcoin from "bitcoinjs-lib";
@@ -14,10 +15,17 @@ function parseHexString(str) {
   return result;
 }
 
+const toPrefixBuffer = network => {
+  network.messagePrefix = Buffer.concat([
+    Buffer.from([network.messagePrefix.length + 1]),
+    Buffer.from(network.messagePrefix + "\n", "hex")
+  ]);
+  return network;
+};
+
 function compressPublicKey(publicKey) {
   var compressedKeyIndex;
-  var compressedKey;
-  if (publicKey.substring(0, 2) != "04") {
+  if (publicKey.substring(0, 2) !== "04") {
     throw "Invalid public key format";
   }
   if (parseInt(publicKey.substring(128, 130), 16) % 2 !== 0) {
@@ -40,44 +48,6 @@ function toHexInt(number) {
     toHexDigit((number >> 16) & 0xff) +
     toHexDigit((number >> 8) & 0xff) +
     toHexDigit(number & 0xff)
-  );
-}
-
-function hexToBin(src) {
-  var result = "";
-  var digits = "0123456789ABCDEF";
-  if (src.length % 2 != 0) {
-    throw "Invalid string";
-  }
-  src = src.toUpperCase();
-  for (var i = 0; i < src.length; i += 2) {
-    var x1 = digits.indexOf(src.charAt(i));
-    if (x1 < 0) {
-      return "";
-    }
-    var x2 = digits.indexOf(src.charAt(i + 1));
-    if (x2 < 0) {
-      return "";
-    }
-    result += String.fromCharCode((x1 << 4) + x2);
-  }
-  return result;
-}
-
-function toHexString(byteArray) {
-  return Array.from(byteArray, function(byte) {
-    return ("0" + (byte & 0xff).toString(16)).slice(-2);
-  }).join("");
-}
-
-function readHexDigit(data, offset) {
-  var digits = "0123456789ABCDEF";
-  if (typeof offset == "undefined") {
-    offset = 0;
-  }
-  return (
-    (digits.indexOf(data.substring(offset, offset + 1).toUpperCase()) << 4) +
-    digits.indexOf(data.substring(offset + 1, offset + 2).toUpperCase())
   );
 }
 
@@ -144,11 +114,8 @@ export var findPath = async (params, onUpdate, onDone, onError) => {
   } else {
     onError("You need to use Google Chrome");
   }
-  var running = true;
-  var hdnode = {};
-  let comm;
   try {
-    comm = await Dongle.init();
+    await Dongle.init();
     let xpub58 = await initialize(
       parseInt(params.coin),
       parseInt(params.coinPath, 10),
@@ -157,7 +124,7 @@ export var findPath = async (params, onUpdate, onDone, onError) => {
     );
     console.log("success initialized", xpub58);
     params.xpub58 = xpub58;
-    params.network = Networks[params.coin].bitcoinjs;
+    params.network = toPrefixBuffer(Networks[params.coin].bitcoinjs);
     derivationWorker.onmessage = event => {
       onUpdate(event.data.response);
       if (event.data.done) {
@@ -173,7 +140,6 @@ export var findPath = async (params, onUpdate, onDone, onError) => {
     };
     derivationWorker.postMessage(params);
     return () => {
-      running = false;
       derivationWorker.terminate();
     };
   } catch (e) {
@@ -203,7 +169,10 @@ export var findAddress = async (path, segwit, coin) => {
   var script = segwit
     ? Networks[coin].bitcoinjs.scriptHash
     : Networks[coin].bitcoinjs.pubKeyHash;
-  var hdnode = bitcoin.HDNode.fromBase58(xpub58, Networks[coin].bitcoinjs);
+  var hdnode = bitcoin.HDNode.fromBase58(
+    xpub58,
+    toPrefixBuffer(Networks[coin].bitcoinjs)
+  );
   var pubKeyToSegwitAddress = (pubKey, scriptVersion, segwit) => {
     var script = [0x00, 0x14].concat(
       Array.from(bitcoin.crypto.hash160(pubKey))
