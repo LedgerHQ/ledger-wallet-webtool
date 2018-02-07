@@ -229,10 +229,13 @@ class FundsTransfer extends Component {
         utxos: utxos,
         balance: balance,
         address: address,
-        customFeesVal: this.state.standardFees[6],
+        customFeesVal: 0,
         fees:
           estimateTransactionSize(inputs, 1, this.state.segwit).max *
-          this.state.standardFees[6]
+          this.state.standardFees[6] < balance
+          ? estimateTransactionSize(inputs, 1, this.state.segwit).max * this.state.standardFees[6]
+          : 0,
+        customFees: this.state.standardFees[6] >= balance
       });
     }
   };
@@ -295,7 +298,7 @@ class FundsTransfer extends Component {
       );
     });
     feeSelect.push(
-      <option value={false} key={0}>
+      <option value={false} key={0} selected={this.state.customFees}>
         Custom fees
       </option>
     );
