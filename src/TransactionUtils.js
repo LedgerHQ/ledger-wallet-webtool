@@ -1,4 +1,3 @@
-"use strict";
 import Networks from "./Networks";
 import bs58 from "bs58";
 import padStart from "lodash/padStart";

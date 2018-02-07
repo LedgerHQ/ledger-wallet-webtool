@@ -1,4 +1,3 @@
-"use strict";
 import Dongle from "./libs/Dongle";
 import Networks from "./Networks";
 import bitcoin from "bitcoinjs-lib";
@@ -18,7 +17,7 @@ function parseHexString(str) {
 const toPrefixBuffer = network => {
   network.messagePrefix = Buffer.concat([
     Buffer.from([network.messagePrefix.length + 1]),
-    Buffer.from(network.messagePrefix + "\n", "hex")
+    Buffer.from(network.messagePrefix + "\n", "utf8")
   ]);
   return network;
 };
