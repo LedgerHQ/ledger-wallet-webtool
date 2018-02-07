@@ -135,13 +135,13 @@ var createOutputScript = function(recipientAddress, amount, coin) {
     p2pkhNetworkVersionSize = hash160WithNetwork.length - 20;
     hash160 = hash160WithNetwork.slice(p2pkhNetworkVersionSize);
     if (p2pkhNetworkVersionSize === 1) {
-      if (hash160WithNetwork[0] === Networks[coin].p2sh) {
+      if (hash160WithNetwork[0] === Networks[coin].bitcoinjs.scriptHash) {
         return P2shScript(hash160);
       }
     } else {
       if (
         ((hash160WithNetwork[0] << 8) | hash160WithNetwork[1]) ===
-        Networks[coin].p2sh
+        Networks[coin].bitcoinjs.scriptHash
       ) {
         return P2shScript(hash160);
       }
