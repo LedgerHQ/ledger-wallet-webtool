@@ -15,7 +15,7 @@ import {
   estimateTransactionSize,
   createPaymentTransaction
 } from "./TransactionUtils";
-import Errors from "./libs/Errors"
+import Errors from "./libs/Errors";
 const VALIDATIONS = {
   1: "fast",
   3: "medium",
@@ -125,15 +125,16 @@ class FundsTransfer extends Component {
       running: true,
       prepared: false,
       done: false,
-      empty: false
+      empty: false,
+      error: false
     });
     try {
       var f = await this.getFees();
       var d = await new Promise((resolve, reject) => {
         var txs = [];
         var spent = {};
-        findAddress(this.state.path, this.state.segwit, this.state.coin).then(
-          address => {
+        findAddress(this.state.path, this.state.segwit, this.state.coin)
+          .then(address => {
             var blockHash = "";
             var apiPath =
               //"https://api.ledgerwallet.com/blockchain/v2/" +
@@ -184,13 +185,13 @@ class FundsTransfer extends Component {
                 });
             };
             iterate();
-          }
-        ).catch((e) => {
-          reject(Errors.u2f)
-        })
-      }).catch((e) => {
-        throw e
-      })
+          })
+          .catch(e => {
+            reject(Errors.u2f);
+          });
+      }).catch(e => {
+        throw e;
+      });
       this.onPrepared(d);
     } catch (e) {
       this.onError(e);
@@ -232,49 +233,55 @@ class FundsTransfer extends Component {
         customFeesVal: 0,
         fees:
           estimateTransactionSize(inputs, 1, this.state.segwit).max *
-          this.state.standardFees[6] < balance
-          ? estimateTransactionSize(inputs, 1, this.state.segwit).max * this.state.standardFees[6]
-          : 0,
+            this.state.standardFees[6] <
+          balance
+            ? estimateTransactionSize(inputs, 1, this.state.segwit).max *
+              this.state.standardFees[6]
+            : 0,
         customFees: this.state.standardFees[6] >= balance
       });
     }
   };
 
-  send = () => {
-    this.setState({ running: true, done: false });
-    createPaymentTransaction(
-      this.state.destination,
-      this.state.balance - this.state.fees,
-      this.state.utxos,
-      this.state.path,
-      this.state.coin
-    )
-      .then(res => {
-        var body = JSON.stringify({
-          tx: res
-        });
-        var path =
-          //"https://api.ledgerwallet.com/blockchain/v2/" +
-          Networks[this.state.coin].apiName + "/transactions/send";
-        console.log("res", res);
-        fetch(path, {
-          headers: {
-            "Content-Type": "application/json",
-            "Content-Length": JSON.stringify(body).length
-          },
-          method: "post",
-          body
-        })
-          .then(res => res.json())
-          .then(data => this.onSent(data.result));
-      })
-      .catch(e => {
-        this.onError(e);
+  send = async () => {
+    this.setState({ running: true, done: false, error: false });
+    try {
+      let tx = await createPaymentTransaction(
+        this.state.destination,
+        this.state.balance - this.state.fees,
+        this.state.utxos,
+        this.state.path,
+        this.state.coin
+      );
+      var body = JSON.stringify({
+        tx: tx
       });
+      var path =
+        //"https://api.ledgerwallet.com/blockchain/v2/" +
+        Networks[this.state.coin].apiName + "/transactions/send";
+      console.log("res", tx);
+      let res = await fetch(path, {
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": JSON.stringify(body).length
+        },
+        method: "post",
+        body
+      });
+      let data = await res.json();
+      this.onSent(data);
+    } catch (e) {
+      this.onError(e);
+    }
   };
 
   onSent = tx => {
-    this.setState({ prepared: false, running: false, done: tx });
+    this.setState({
+      prepared: false,
+      running: false,
+      done: tx.result,
+      error: !tx.result ? Errors.sendFail + tx.error.message : false
+    });
   };
 
   render() {
@@ -439,7 +446,7 @@ class FundsTransfer extends Component {
                   <Button
                     bsStyle="primary"
                     bsSize="large"
-                    disabled={this.state.running}
+                    disabled={this.state.running || !this.state.destination}
                     onClick={this.send}
                   >
                     Send
