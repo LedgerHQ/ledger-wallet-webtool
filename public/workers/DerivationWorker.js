@@ -27,7 +27,7 @@ onmessage = function(params) {
   var index = 0;
   var purpose = params.data.segwit ? "49'/" : "44'/";
   var prefix =
-    purpose + params.data.coin + "'" + "/" + params.data.account + "'/";
+    purpose + params.data.coinPath + "'" + "/" + params.data.account + "'/";
   var nextPath = function(i) {
     if (i <= 0x7fffffff) {
       for (var j = 0; j < 2; j++) {
