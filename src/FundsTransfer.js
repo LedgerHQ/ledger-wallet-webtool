@@ -31,7 +31,7 @@ class FundsTransfer extends Component {
       address: "",
       prepared: false,
       destination: "",
-      coin: "128",
+      coin: "1",
       error: false,
       segwit: true,
       fees: 0,
@@ -44,7 +44,7 @@ class FundsTransfer extends Component {
         6: 1000
       },
       balance: 0,
-      path: "49'/128'/0'/0/2",
+      path: "49'/1'/3'/0/2",
       utxos: {},
       txSize: 0
     };
@@ -82,20 +82,24 @@ class FundsTransfer extends Component {
   };
 
   handleChangeFees = e => {
-    if (e.target.value && e.target.value < this.state.balance) {
+    if (
+      e.target.value &&
+      e.target.value * this.state.txSize < this.state.balance
+    ) {
       this.setState({
         customFees: false,
         fees: this.state.txSize * e.target.value
       });
     } else {
       this.setState({
-        customFees: true
+        customFees: true,
+        fees: this.state.customFeesVal * this.state.txSize
       });
     }
   };
 
   handleEditFees = e => {
-    if (e.target.value < this.state.balance) {
+    if (e.target.value * this.state.txSize < this.state.balance) {
       this.setState({
         customFeesVal: e.target.value,
         fees: this.state.txSize * e.target.value
@@ -108,16 +112,15 @@ class FundsTransfer extends Component {
   };
 
   getFees = async () => {
-    var path =
-      "https://api.ledgerwallet.com/blockchain/v2/" +
-      Networks[this.state.coin].apiName +
-      "/fees";
-    return await fetch(path)
-      .then(response => response.json())
-      .then(data => {
-        this.setState({ standardFees: data });
-        return data;
-      });
+    try {
+      var path =
+        "https://api.ledgerwallet.com/blockchain/v2/" +
+        Networks[this.state.coin].apiName +
+        "/fees";
+      let response = await fetch(path);
+      let data = await response.json();
+      this.setState({ standardFees: data });
+    } catch (e) {}
   };
 
   prepare = async e => {
@@ -130,7 +133,7 @@ class FundsTransfer extends Component {
       error: false
     });
     try {
-      var f = await this.getFees();
+      await this.getFees();
       var d = await new Promise((resolve, reject) => {
         var txs = [];
         var spent = {};
@@ -221,11 +224,14 @@ class FundsTransfer extends Component {
         address: address
       });
     } else {
+      let txSize = Networks[this.state.coin].handleFeePerByte
+        ? estimateTransactionSize(inputs, 1, this.state.segwit).max
+        : Math.floor(
+            estimateTransactionSize(inputs, 1, this.state.segwit).max / 1000
+          ) + 1;
       this.setState({
         empty: false,
-        txSize: Networks[this.state.coin].handleFeePerByte
-          ? estimateTransactionSize(inputs, 1, this.state.segwit).max
-          : estimateTransactionSize(inputs, 1, this.state.segwit).max / 1000,
+        txSize,
         prepared: true,
         running: false,
         utxos: utxos,
@@ -233,13 +239,10 @@ class FundsTransfer extends Component {
         address: address,
         customFeesVal: 0,
         fees:
-          estimateTransactionSize(inputs, 1, this.state.segwit).max *
-            this.state.standardFees[6] <
-          balance
-            ? estimateTransactionSize(inputs, 1, this.state.segwit).max *
-              this.state.standardFees[6]
+          txSize * this.state.standardFees[6] < balance
+            ? txSize * this.state.standardFees[6]
             : 0,
-        customFees: this.state.standardFees[6] >= balance
+        customFees: txSize * this.state.standardFees[6] >= balance
       });
     }
   };
@@ -300,15 +303,16 @@ class FundsTransfer extends Component {
 
     let feeSelect = [];
     Object.keys(VALIDATIONS).forEach(blocks => {
-      feeSelect.push(
-        <option
-          value={this.state.standardFees[blocks]}
-          key={blocks}
-          selected={blocks == "6"}
-        >
-          {VALIDATIONS[blocks]} :{this.state.standardFees[blocks]}
-        </option>
-      );
+      if (
+        this.state.standardFees[blocks] * this.state.txSize <
+        this.state.balance
+      ) {
+        feeSelect.push(
+          <option value={this.state.standardFees[blocks]} key={blocks}>
+            {VALIDATIONS[blocks]} :{this.state.standardFees[blocks]}
+          </option>
+        );
+      }
     });
     feeSelect.push(
       <option value={false} key={0} selected={this.state.customFees}>

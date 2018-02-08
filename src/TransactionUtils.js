@@ -197,7 +197,9 @@ export var createPaymentTransaction = async (
   let apiCalls = [];
   const devices = await Transport.list();
   if (devices.length === 0) throw "no device";
-  const transport = await Transport.open(devices[0], 60);
+  const transport = await Transport.open(devices[0]);
+  transport.setExchangeTimeout(60000);
+  transport.setDebugMode(true);
   const btc = new AppBtc(transport);
   Object.keys(utxos).forEach(h => {
     Object.keys(utxos[h]).forEach(i => {
@@ -215,7 +217,7 @@ export var createPaymentTransaction = async (
             btc.splitTransaction(
               data[0].hex,
               Networks[coin].isSegwitSupported,
-              Networks[coin].hasTimestamp
+              Networks[coin].areTransactionTimestamped
             )
           )
       );
@@ -236,7 +238,9 @@ export var createPaymentTransaction = async (
     undefined,
     Networks[coin].sigHash,
     p2sh,
-    Networks[coin].hasTimestamp ? Date.now() : undefined
+    Networks[coin].areTransactionTimestamped
+      ? Math.floor(Date.now() / 1000) - 15 * 60
+      : undefined
   );
   return res;
 };
