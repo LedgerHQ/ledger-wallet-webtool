@@ -212,7 +212,11 @@ export var createPaymentTransaction = async (
         fetch(path)
           .then(res => res.json())
           .then(data =>
-            btc.splitTransaction(data[0].hex, Networks[coin].isSegwitSupported)
+            btc.splitTransaction(
+              data[0].hex,
+              Networks[coin].isSegwitSupported,
+              Networks[coin].hasTimestamp
+            )
           )
       );
     });
@@ -231,7 +235,8 @@ export var createPaymentTransaction = async (
     outputScript.toString("hex"),
     undefined,
     undefined,
-    p2sh
+    p2sh,
+    Networks[coin].hasTimestamp ? Date.now() : undefined
   );
   return res;
 };
