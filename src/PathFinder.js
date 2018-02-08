@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import Networks from "./Networks";
-import Errors from "./libs/Errors";
+import Errors from "./Errors";
 import {
   Button,
   Checkbox,

@@ -4,7 +4,7 @@ import Networks from "./Networks";
 import bitcoin from "bitcoinjs-lib";
 import bs58 from "bs58";
 import padStart from "lodash/padStart";
-import Errors from "./libs/Errors";
+import Errors from "./Errors";
 
 function parseHexString(str) {
   var result = [];

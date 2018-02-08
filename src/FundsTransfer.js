@@ -15,7 +15,7 @@ import {
   estimateTransactionSize,
   createPaymentTransaction
 } from "./TransactionUtils";
-import Errors from "./libs/Errors";
+import Errors from "./Errors";
 const VALIDATIONS = {
   6: "slow",
   3: "medium",
