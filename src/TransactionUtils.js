@@ -240,12 +240,3 @@ export var createPaymentTransaction = async (
   );
   return res;
 };
-
-export const findAddress = async path => {
-  const devices = await Transport.list();
-  if (devices.length === 0) throw "no device";
-  const transport = await Transport.open(devices[0], 60);
-  const btc = new AppBtc(transport);
-  var pub = await btc.getWalletPublicKey(path);
-  return pub.bitcoinAddress;
-};
