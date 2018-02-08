@@ -282,7 +282,7 @@ class FundsTransfer extends Component {
       prepared: false,
       running: false,
       done: tx.result,
-      error: !tx.result ? Errors.sendFail + tx.error.message : false
+      error: !tx.result ? Errors.sendFail : false
     });
   };
 

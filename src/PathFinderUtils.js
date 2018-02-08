@@ -1,4 +1,5 @@
-import Dongle from "./libs/Dongle";
+import Transport from "@ledgerhq/hw-transport-u2f";
+import AppBtc from "@ledgerhq/hw-app-btc";
 import Networks from "./Networks";
 import bitcoin from "bitcoinjs-lib";
 import bs58 from "bs58";
@@ -18,7 +19,7 @@ const toPrefixBuffer = network => {
   network.messagePrefix = Buffer.concat([
     Buffer.from([network.messagePrefix.length + 1]),
     Buffer.from(network.messagePrefix + "\n", "utf8")
-  ]);
+  ]).toString("hex");
   return network;
 };
 
@@ -77,11 +78,15 @@ function createXPUB(
 }
 
 var initialize = async (network, coin, account, segwit) => {
+  const devices = await Transport.list();
+  if (devices.length === 0) throw "no device";
+  const transport = await Transport.open(devices[0]);
+  const btc = new AppBtc(transport);
   var purpose = segwit ? "49'/" : "44'/";
   var prevPath = purpose + coin + "'";
   const finalize = async fingerprint => {
     var path = prevPath + "/" + account + "'";
-    let nodeData = await Dongle.btc.getWalletPublicKey_async(path);
+    let nodeData = await btc.getWalletPublicKey(path, undefined, segwit);
     var publicKey = compressPublicKey(nodeData.publicKey);
     //console.log("puikeyu", publicKey);
     var childnum = (0x80000000 | account) >>> 0;
@@ -96,7 +101,7 @@ var initialize = async (network, coin, account, segwit) => {
     );
     return encodeBase58Check(xpub);
   };
-  let nodeData = await Dongle.btc.getWalletPublicKey_async(prevPath);
+  let nodeData = await btc.getWalletPublicKey(prevPath, undefined, segwit);
   var publicKey = compressPublicKey(nodeData.publicKey);
   publicKey = parseHexString(publicKey);
   var result = bitcoin.crypto.sha256(publicKey);
@@ -114,7 +119,6 @@ export var findPath = async (params, onUpdate, onDone, onError) => {
     onError("You need to use Google Chrome");
   }
   try {
-    await Dongle.init();
     let xpub58 = await initialize(
       parseInt(params.coin),
       parseInt(params.coinPath, 10),
@@ -124,6 +128,8 @@ export var findPath = async (params, onUpdate, onDone, onError) => {
     console.log("success initialized", xpub58);
     params.xpub58 = xpub58;
     params.network = toPrefixBuffer(Networks[params.coin].bitcoinjs);
+    console.log("network", params.network, typeof params.network.messagePrefix);
+
     derivationWorker.onmessage = event => {
       onUpdate(event.data.response);
       if (event.data.done) {
@@ -147,18 +153,6 @@ export var findPath = async (params, onUpdate, onDone, onError) => {
 };
 
 export var findAddress = async (path, segwit, coin) => {
-  try {
-    var comm = await Dongle.init();
-  } catch (e) {
-    console.log("init fail", e);
-    throw e;
-  }
-  try {
-    await Dongle.setCoinVersion(comm, Networks[coin]);
-  } catch (e) {
-    console.log("error setcoin", e);
-    throw e;
-  }
   const xpub58 = await initialize(
     coin,
     path.split("/")[1].replace("'", ""),

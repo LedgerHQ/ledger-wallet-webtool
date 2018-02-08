@@ -197,7 +197,7 @@ export var createPaymentTransaction = async (
   let apiCalls = [];
   const devices = await Transport.list();
   if (devices.length === 0) throw "no device";
-  const transport = await Transport.open(devices[0]);
+  const transport = await Transport.open(devices[0], 60);
   const btc = new AppBtc(transport);
   Object.keys(utxos).forEach(h => {
     Object.keys(utxos[h]).forEach(i => {
