@@ -234,7 +234,7 @@ export var createPaymentTransaction = async (
     undefined,
     outputScript.toString("hex"),
     undefined,
-    undefined,
+    Networks[coin].sigHash,
     p2sh,
     Networks[coin].hasTimestamp ? Date.now() : undefined
   );
