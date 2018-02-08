@@ -1,4 +1,6 @@
 import React, { Component } from "react";
+import Networks from "./Networks";
+import Errors from "./libs/Errors";
 import {
   Button,
   Checkbox,
@@ -6,11 +8,12 @@ import {
   FormControl,
   FormGroup,
   ControlLabel,
-  ButtonToolbar
+  ButtonToolbar,
+  Alert
 } from "react-bootstrap";
 
 import { BootstrapTable, TableHeaderColumn } from "react-bootstrap-table";
-import findPath from "./PathFinderUtils";
+import { findPath } from "./PathFinderUtils";
 import _ from "lodash";
 
 class PathFinder extends Component {
@@ -24,22 +27,22 @@ class PathFinder extends Component {
         paused: false,
         running: false,
         batchSize: 10,
-        account: 0,
+        account: "0",
         address: "",
         result: [],
-        coin: 0,
-        index: 0,
-        segwit: false,
-        p2sh: 5,
-        p2pkh: 0
+        coinPath: "1",
+        coin: "1",
+        index: "0",
+        segwit: true,
+        error: false
       };
     }
   }
 
   componentWillUnmount() {
     var state = {};
+    this.terminate && this.terminate();
     if (this.state.running || this.state.paused) {
-      this.terminate();
       Object.assign(state, this.state, { running: false, paused: true });
     } else {
       Object.assign(state, this.state);
@@ -48,7 +51,7 @@ class PathFinder extends Component {
   }
 
   handleChangeAddress = e => {
-    this.setState({ address: e.target.value });
+    this.setState({ address: e.target.value.replace(/\s/g, "") });
   };
 
   handleChangeAccount = e => {
@@ -59,20 +62,16 @@ class PathFinder extends Component {
     this.setState({ index: e.target.value });
   };
 
+  handleChangeCoinPath = e => {
+    this.setState({ coinPath: e.target.value });
+  };
+
   handleChangeCoin = e => {
     this.setState({ coin: e.target.value });
   };
 
   handleChangeSegwit = e => {
     this.setState({ segwit: !this.state.segwit });
-  };
-
-  handleChangeP2pkh = e => {
-    this.setState({ p2pkh: e.target.value });
-  };
-
-  handleChangeP2sh = e => {
-    this.setState({ p2sh: e.target.value });
   };
 
   onUpdate = e => {
@@ -88,44 +87,52 @@ class PathFinder extends Component {
   };
 
   onError = e => {
-    this.stop();
-    alert(e);
+    this.setState({ error: e.toString() });
+  };
+
+  dismiss = () => {
+    this.setState({ error: false });
   };
 
   reset = () => {
     this.setState({
-      account: 0,
-      address: "",
       index: 0,
       result: [],
       paused: false,
-      done: false
+      done: false,
+      error: false
     });
     localStorage.removeItem("LedgerPathFinder");
   };
 
-  start = () => {
+  start = async () => {
     this.setState({ running: true, paused: false });
-    this.terminate = findPath(
-      _.pick(this.state, [
-        "address",
-        "account",
-        "index",
-        "coin",
-        "segwit",
-        "p2pkh",
-        "p2sh",
-        "batchSize"
-      ]),
-      this.onUpdate,
-      this.onDone,
-      this.onError
-    );
+    try {
+      this.terminate = await findPath(
+        _.pick(this.state, [
+          "address",
+          "account",
+          "index",
+          "coinPath",
+          "coin",
+          "segwit",
+          "batchSize"
+        ]),
+        this.onUpdate,
+        this.onDone,
+        this.onError
+      );
+    } catch (e) {
+      this.onError(Errors.u2f);
+    }
   };
 
   stop = () => {
-    this.terminate();
-    this.setState({ running: false, paused: true });
+    this.terminate && this.terminate();
+    this.setState({
+      running: false,
+      paused: true
+    });
   };
 
   save = () => {
@@ -133,6 +140,16 @@ class PathFinder extends Component {
   };
 
   render() {
+    var coinSelect = [];
+    for (var coin in Networks) {
+      if (Networks.hasOwnProperty(coin)) {
+        coinSelect.push(
+          <option value={coin} key={coin} selected={coin === this.state.coin}>
+            {Networks[coin].name}
+          </option>
+        );
+      }
+    }
     var startName = "Start";
     if (this.state.paused) {
       startName = "Continue";
@@ -151,26 +168,21 @@ class PathFinder extends Component {
         This is Path finder
         <form>
           <FormGroup controlId="pathSearch">
-            <ControlLabel>P2PKH</ControlLabel>
+            <ControlLabel>Currency</ControlLabel>
             <FormControl
-              type="text"
-              value={this.state.p2pkh}
-              onChange={this.handleChangeP2pkh}
-              disabled={this.state.running || this.state.paused}
-            />
-            <ControlLabel>P2SH</ControlLabel>
-            <FormControl
-              type="text"
-              value={this.state.p2sh}
-              onChange={this.handleChangeP2sh}
-              disabled={this.state.running || this.state.paused}
-            />
-            <ControlLabel>Coin Type</ControlLabel>
-            <FormControl
-              type="text"
-              value={this.state.coin}
-              placeholder="Bitcoin = 0"
+              componentClass="select"
+              placeholder="select"
               onChange={this.handleChangeCoin}
+              disabled={this.state.running || this.state.paused}
+            >
+              {coinSelect}
+            </FormControl>
+            <ControlLabel>Coin Path</ControlLabel>
+            <FormControl
+              type="text"
+              value={this.state.coinPath}
+              placeholder="Bitcoin = 0"
+              onChange={this.handleChangeCoinPath}
               disabled={this.state.running || this.state.paused}
             />
             <ControlLabel>Address</ControlLabel>
@@ -222,13 +234,21 @@ class PathFinder extends Component {
             reset
           </Button>
         </ButtonToolbar>
-        {this.state.done &&
-          this.state.address.length > 0 && (
-            <div className="result">
-              The corresponding path is:{" "}
-              {this.state.result[this.state.result.length - 1].path}
-            </div>
+        <div className="alert">
+          {this.state.done &&
+            this.state.address.length > 0 && (
+              <Alert bsStyle="success">
+                <strong>Path found!</strong> The path for {this.state.address}{" "}
+                is {this.state.result[this.state.result.length - 1].path}
+              </Alert>
+            )}
+          {this.state.error && (
+            <Alert bsStyle="warning">
+              <strong>Oups!</strong>
+              <p>{this.state.error}</p>
+            </Alert>
           )}
+        </div>
         <div className="progress">
           Addresses scanned: {this.state.result.length}
         </div>

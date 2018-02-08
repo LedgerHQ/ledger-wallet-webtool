@@ -1,24 +1,18 @@
-importScripts("/bitcoinjs.min.js");
+importScripts("bitcoinjs.min.js");
 
-var pubKeyToAddress = (pubKey, scriptVersion, segwit) => {
-  if (segwit) {
-    var script = [0x00, 0x14].concat(
-      Array.from(bitcoin.crypto.hash160(pubKey))
-    );
-    var hash160 = bitcoin.crypto.hash160(script);
-  } else {
-    var hash160 = bitcoin.crypto.hash160(pubKey);
-  }
+var pubKeyToSegwitAddress = (pubKey, scriptVersion, segwit) => {
+  var script = [0x00, 0x14].concat(Array.from(bitcoin.crypto.hash160(pubKey)));
+  var hash160 = bitcoin.crypto.hash160(script);
   return bitcoin.address.toBase58Check(hash160, scriptVersion);
 };
 
 var getPublicAddress = (hdnode, path, script, segwit) => {
   hdnode = hdnode.derivePath(path);
-  return pubKeyToAddress(
-    hdnode.getPublicKeyBuffer().toString("hex"),
-    script,
-    segwit
-  );
+  if (!segwit) {
+    return hdnode.getAddress().toString();
+  } else {
+    return pubKeyToSegwitAddress(hdnode.getPublicKeyBuffer(), script, segwit);
+  }
 };
 
 onmessage = function(params) {
@@ -27,10 +21,13 @@ onmessage = function(params) {
     params.data.network
   );
   var response = [];
-  var script = params.data.segwit ? params.data.p2sh : params.data.p2pkh;
+  var script = params.data.segwit
+    ? params.data.network.scriptHash
+    : params.data.network.pubKeyHash;
   var index = 0;
+  var purpose = params.data.segwit ? "49'/" : "44'/";
   var prefix =
-    "44'/" + params.data.coin + "'" + "/" + params.data.account + "'/";
+    purpose + params.data.coinPath + "'" + "/" + params.data.account + "'/";
   var nextPath = function(i) {
     if (i <= 0x7fffffff) {
       for (var j = 0; j < 2; j++) {

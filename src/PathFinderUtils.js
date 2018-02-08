@@ -1,8 +1,10 @@
-import Dongle from "./Dongle";
+import Transport from "@ledgerhq/hw-transport-u2f";
+import AppBtc from "@ledgerhq/hw-app-btc";
 import Networks from "./Networks";
 import bitcoin from "bitcoinjs-lib";
 import bs58 from "bs58";
-import _ from "lodash";
+import padStart from "lodash/padStart";
+import Errors from "./libs/Errors";
 
 function parseHexString(str) {
   var result = [];
@@ -13,13 +15,20 @@ function parseHexString(str) {
   return result;
 }
 
+const toPrefixBuffer = network => {
+  network.messagePrefix = Buffer.concat([
+    Buffer.from([network.messagePrefix.length + 1]),
+    Buffer.from(network.messagePrefix + "\n", "utf8")
+  ]).toString("hex");
+  return network;
+};
+
 function compressPublicKey(publicKey) {
   var compressedKeyIndex;
-  var compressedKey;
-  if (publicKey.substring(0, 2) != "04") {
+  if (publicKey.substring(0, 2) !== "04") {
     throw "Invalid public key format";
   }
-  if (parseInt(publicKey.substring(128, 2), 16) % 2 !== 0) {
+  if (parseInt(publicKey.substring(128, 130), 16) % 2 !== 0) {
     compressedKeyIndex = "03";
   } else {
     compressedKeyIndex = "02";
@@ -42,44 +51,6 @@ function toHexInt(number) {
   );
 }
 
-function hexToBin(src) {
-  var result = "";
-  var digits = "0123456789ABCDEF";
-  if (src.length % 2 != 0) {
-    throw "Invalid string";
-  }
-  src = src.toUpperCase();
-  for (var i = 0; i < src.length; i += 2) {
-    var x1 = digits.indexOf(src.charAt(i));
-    if (x1 < 0) {
-      return "";
-    }
-    var x2 = digits.indexOf(src.charAt(i + 1));
-    if (x2 < 0) {
-      return "";
-    }
-    result += String.fromCharCode((x1 << 4) + x2);
-  }
-  return result;
-}
-
-function toHexString(byteArray) {
-  return Array.from(byteArray, function(byte) {
-    return ("0" + (byte & 0xff).toString(16)).slice(-2);
-  }).join("");
-}
-
-function readHexDigit(data, offset) {
-  var digits = "0123456789ABCDEF";
-  if (typeof offset == "undefined") {
-    offset = 0;
-  }
-  return (
-    (digits.indexOf(data.substring(offset, offset + 1).toUpperCase()) << 4) +
-    digits.indexOf(data.substring(offset + 1, offset + 2).toUpperCase())
-  );
-}
-
 function encodeBase58Check(vchIn) {
   vchIn = parseHexString(vchIn);
   var chksum = bitcoin.crypto.sha256(vchIn);
@@ -98,92 +69,127 @@ function createXPUB(
   network
 ) {
   var xpub = toHexInt(network);
-  xpub = xpub + _.padStart(depth.toString(16), 2, "0");
-  xpub = xpub + _.padStart(fingerprint.toString(16), 8, "0");
-  xpub = xpub + _.padStart(childnum.toString(16), 8, "0");
+  xpub = xpub + padStart(depth.toString(16), 2, "0");
+  xpub = xpub + padStart(fingerprint.toString(16), 8, "0");
+  xpub = xpub + padStart(childnum.toString(16), 8, "0");
   xpub = xpub + chaincode;
   xpub = xpub + publicKey;
   return xpub;
 }
 
-function findPath(params, onUpdate, onDone, onError) {
+var initialize = async (network, coin, account, segwit) => {
+  const devices = await Transport.list();
+  if (devices.length === 0) throw "no device";
+  const transport = await Transport.open(devices[0]);
+  const btc = new AppBtc(transport);
+  var purpose = segwit ? "49'/" : "44'/";
+  var prevPath = purpose + coin + "'";
+  const finalize = async fingerprint => {
+    var path = prevPath + "/" + account + "'";
+    let nodeData = await btc.getWalletPublicKey(path, undefined, segwit);
+    var publicKey = compressPublicKey(nodeData.publicKey);
+    //console.log("puikeyu", publicKey);
+    var childnum = (0x80000000 | account) >>> 0;
+    //console.log("childnum", childnum);
+    var xpub = createXPUB(
+      3,
+      fingerprint,
+      childnum,
+      nodeData.chainCode,
+      publicKey,
+      Networks[network].xpub
+    );
+    return encodeBase58Check(xpub);
+  };
+  let nodeData = await btc.getWalletPublicKey(prevPath, undefined, segwit);
+  var publicKey = compressPublicKey(nodeData.publicKey);
+  publicKey = parseHexString(publicKey);
+  var result = bitcoin.crypto.sha256(publicKey);
+  var result = bitcoin.crypto.ripemd160(result);
+  var fingerprint =
+    ((result[0] << 24) | (result[1] << 16) | (result[2] << 8) | result[3]) >>>
+    0;
+  return finalize(fingerprint);
+};
+
+export var findPath = async (params, onUpdate, onDone, onError) => {
   if (typeof Worker !== "undefined") {
     var derivationWorker = new Worker("./workers/DerivationWorker.js");
   } else {
     onError("You need to use Google Chrome");
   }
-  var running = true;
-  var prevPath = "44'/" + params.coin + "'";
-  var hdnode = {};
-  var initialize = function() {
-    return new Promise((resolve, reject) => {
-      function finalize(fingerprint) {
-        return new Promise((resolve, reject) => {
-          var path = prevPath + "/" + params.account + "'";
-          Dongle.btc.getWalletPublicKey_async(path).then((nodeData, error) => {
-            var publicKey = compressPublicKey(nodeData.publicKey);
-            var childnum = (0x80000000 | parseInt(params.account)) >>> 0;
-            var xpub = createXPUB(
-              3,
-              fingerprint,
-              childnum,
-              nodeData.chainCode,
-              publicKey,
-              Networks[0].xpub
-            );
-            var xpub58 = encodeBase58Check(xpub);
-            resolve(xpub58);
-          });
-        });
+  try {
+    let xpub58 = await initialize(
+      parseInt(params.coin),
+      parseInt(params.coinPath, 10),
+      parseInt(params.account, 10),
+      params.segwit
+    );
+    console.log("success initialized", xpub58);
+    params.xpub58 = xpub58;
+    params.network = toPrefixBuffer(Networks[params.coin].bitcoinjs);
+    console.log("network", params.network, typeof params.network.messagePrefix);
+
+    derivationWorker.onmessage = event => {
+      onUpdate(event.data.response);
+      if (event.data.done) {
+        onDone();
       }
-      Dongle.btc.getWalletPublicKey_async(prevPath).then((nodeData, error) => {
-        var publicKey = compressPublicKey(nodeData.publicKey);
-        publicKey = parseHexString(publicKey);
-        var result = bitcoin.crypto.sha256(publicKey);
-        var result = bitcoin.crypto.ripemd160(result);
-        var fingerprint =
-          ((result[0] << 24) |
-            (result[1] << 16) |
-            (result[2] << 8) |
-            result[3]) >>>
-          0;
-        resolve(finalize(fingerprint));
-      });
-    });
+      if (event.data.failed) {
+        onError("The address is not from this account");
+      }
+    };
+    derivationWorker.onerror = error => {
+      onError("Derivation error: " + error.message);
+      derivationWorker.terminate();
+    };
+    derivationWorker.postMessage(params);
+    return () => {
+      derivationWorker.terminate();
+    };
+  } catch (e) {
+    throw Errors.u2f;
+  }
+};
+
+export var findAddress = async (path, segwit, coin) => {
+  const xpub58 = await initialize(
+    coin,
+    path.split("/")[1].replace("'", ""),
+    path.split("/")[2].replace("'", ""),
+    segwit
+  );
+  var script = segwit
+    ? Networks[coin].bitcoinjs.scriptHash
+    : Networks[coin].bitcoinjs.pubKeyHash;
+  var hdnode = bitcoin.HDNode.fromBase58(
+    xpub58,
+    toPrefixBuffer(Networks[coin].bitcoinjs)
+  );
+  var pubKeyToSegwitAddress = (pubKey, scriptVersion, segwit) => {
+    var script = [0x00, 0x14].concat(
+      Array.from(bitcoin.crypto.hash160(pubKey))
+    );
+    var hash160 = bitcoin.crypto.hash160(script);
+    return bitcoin.address.toBase58Check(hash160, scriptVersion);
   };
 
-  Dongle.init().then(comm => {
-    Dongle.setCoinVersion(comm, Networks[params.coin]).then(res => {
-      console.log("success set coin");
-      initialize().then(xpub58 => {
-        console.log("success initialized", xpub58);
-        params.xpub58 = xpub58;
-        params.network = Networks[params.coin].bitcoinjs;
-        derivationWorker.onmessage = event => {
-          onUpdate(event.data.response);
-          if (event.data.done) {
-            onDone();
-          }
-          if (event.data.failed) {
-            onError("The address is not from this account");
-          }
-        };
-        derivationWorker.onerror = error => {
-          console.log(error);
-          onError("Worker error");
-        };
-        derivationWorker.postMessage(params);
-      });
-    });
-  });
-
-  function terminate() {
-    console.log("terminating");
-    running = false;
-    derivationWorker.terminate();
+  var getPublicAddress = (hdnode, path, script, segwit) => {
+    hdnode = hdnode.derivePath(
+      path
+        .split("/")
+        .splice(3, 2)
+        .join("/")
+    );
+    if (!segwit) {
+      return hdnode.getAddress().toString();
+    } else {
+      return pubKeyToSegwitAddress(hdnode.getPublicKeyBuffer(), script, segwit);
+    }
+  };
+  try {
+    return await getPublicAddress(hdnode, path, script, segwit);
+  } catch (e) {
+    throw e;
   }
-
-  return terminate;
-}
-
-export default findPath;
+};

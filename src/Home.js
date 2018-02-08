@@ -1,11 +1,9 @@
-import React from 'react';
-
-
+import React from "react";
 
 function Home() {
   return (
     <div className="Home">
-      This is Home
+      Please follow the instructions provided by our support.
     </div>
   );
 }
