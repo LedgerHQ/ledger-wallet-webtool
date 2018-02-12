@@ -87,7 +87,7 @@ class PathFinder extends Component {
   };
 
   onError = e => {
-    this.setState({ error: e.toString() });
+    this.setState({ error: e.toString(), running: false, paused: true });
   };
 
   dismiss = () => {
@@ -106,7 +106,7 @@ class PathFinder extends Component {
   };
 
   start = async () => {
-    this.setState({ running: true, paused: false });
+    this.setState({ running: true, paused: false, error: false });
     try {
       this.terminate = await findPath(
         _.pick(this.state, [

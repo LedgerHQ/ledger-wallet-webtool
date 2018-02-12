@@ -1,7 +1,8 @@
 const Errors = {
   u2f:
-    "Verify that your device is plugged in and unlocked, that the bitcoin app is open and that the browser support is on",
-  sendFail: "The sending failed, please try again"
+    "Verify that your device is plugged in, unlocked, and that the correct app is open with the browser support on",
+  sendFail: "The sending failed with error code: ",
+  networkError: "Can't connect to our API, please try again later"
 };
 
 export default Errors;

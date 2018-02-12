@@ -81,6 +81,7 @@ var initialize = async (network, coin, account, segwit) => {
   const devices = await Transport.list();
   if (devices.length === 0) throw "no device";
   const transport = await Transport.open(devices[0]);
+  transport.setExchangeTimeout(2000);
   const btc = new AppBtc(transport);
   var purpose = segwit ? "49'/" : "44'/";
   var prevPath = purpose + coin + "'";
