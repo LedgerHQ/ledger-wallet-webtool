@@ -15,7 +15,7 @@ import {
   estimateTransactionSize,
   createPaymentTransaction
 } from "./TransactionUtils";
-import Errors from "./libs/Errors";
+import Errors from "./Errors";
 const VALIDATIONS = {
   6: "slow",
   3: "medium",
@@ -44,7 +44,7 @@ class FundsTransfer extends Component {
         6: 1000
       },
       balance: 0,
-      path: "49'/128'/0'/0/2",
+      path: "44'/128'/0'/0/2",
       utxos: {},
       txSize: 0
     };
@@ -82,20 +82,24 @@ class FundsTransfer extends Component {
   };
 
   handleChangeFees = e => {
-    if (e.target.value && e.target.value < this.state.balance) {
+    if (
+      e.target.value &&
+      e.target.value * this.state.txSize < this.state.balance
+    ) {
       this.setState({
         customFees: false,
         fees: this.state.txSize * e.target.value
       });
     } else {
       this.setState({
-        customFees: true
+        customFees: true,
+        fees: this.state.customFeesVal * this.state.txSize
       });
     }
   };
 
   handleEditFees = e => {
-    if (e.target.value < this.state.balance) {
+    if (e.target.value * this.state.txSize < this.state.balance) {
       this.setState({
         customFeesVal: e.target.value,
         fees: this.state.txSize * e.target.value
@@ -108,16 +112,15 @@ class FundsTransfer extends Component {
   };
 
   getFees = async () => {
-    var path =
-      "https://api.ledgerwallet.com/blockchain/v2/" +
-      Networks[this.state.coin].apiName +
-      "/fees";
-    return await fetch(path)
-      .then(response => response.json())
-      .then(data => {
-        this.setState({ standardFees: data });
-        return data;
-      });
+    try {
+      var path =
+        "https://api.ledgerwallet.com/blockchain/v2/" +
+        Networks[this.state.coin].apiName +
+        "/fees";
+      let response = await fetch(path);
+      let data = await response.json();
+      this.setState({ standardFees: data });
+    } catch (e) {}
   };
 
   prepare = async e => {
@@ -129,79 +132,78 @@ class FundsTransfer extends Component {
       empty: false,
       error: false
     });
+    let address;
+    let txs = [];
+    let spent = {};
     try {
-      var f = await this.getFees();
-      var d = await new Promise((resolve, reject) => {
-        var txs = [];
-        var spent = {};
-        findAddress(this.state.path, this.state.segwit, this.state.coin)
-          .then(address => {
-            var blockHash = "";
-            var apiPath =
-              "https://api.ledgerwallet.com/blockchain/v2/" +
-              Networks[this.state.coin].apiName +
-              "/addresses/" +
-              address +
-              "/transactions?noToken=true";
-            var iterate = (blockHash = "") => {
-              fetch(apiPath + blockHash)
-                .then(response => response.json())
-                .then(data => {
-                  if (!data.truncated) {
-                    txs = txs.concat(data.txs);
-                    var utxos = {};
-                    txs.forEach(tx => {
-                      console.log(tx.hash);
-                      tx.outputs.forEach(output => {
-                        if (output.address === address) {
-                          if (!spent[tx.hash]) {
-                            spent[tx.hash] = {};
-                          }
-                          if (!spent[tx.hash][output.output_index]) {
-                            if (!utxos[tx.hash]) {
-                              utxos[tx.hash] = {};
-                            }
-                            utxos[tx.hash][output.output_index] = tx;
-                          }
-                        }
-                      });
-
-                      tx.inputs.forEach(input => {
-                        if (input.address === address) {
-                          if (utxos.hasOwnProperty(input.output_hash)) {
-                            delete utxos[input.output_hash][input.output_index];
-                          } else {
-                            if (!spent[input.output_hash]) {
-                              spent[input.output_hash] = {};
-                            }
-                            spent[input.output_hash][input.output_index] = true;
-                          }
-                        }
-                      });
-                    });
-                    resolve([utxos, address]);
-                  } else {
-                    iterate(data.txs[data.txs.length - 1].block.hash);
+      await this.getFees();
+      address = await findAddress(
+        this.state.path,
+        this.state.segwit,
+        this.state.coin
+      );
+    } catch (e) {
+      this.onError(Errors.u2f);
+    }
+    try {
+      var blockHash = "";
+      var apiPath =
+        "https://api.ledgerwallet.com/blockchain/v2/" +
+        Networks[this.state.coin].apiName +
+        "/addresses/" +
+        address +
+        "/transactions?noToken=true";
+      const iterate = async (blockHash = "") => {
+        const res = await fetch(apiPath + blockHash);
+        const data = await res.json();
+        if (!data.truncated) {
+          txs = txs.concat(data.txs);
+          var utxos = {};
+          txs.forEach(tx => {
+            console.log(tx.hash);
+            tx.outputs.forEach(output => {
+              if (output.address === address) {
+                if (!spent[tx.hash]) {
+                  spent[tx.hash] = {};
+                }
+                if (!spent[tx.hash][output.output_index]) {
+                  if (!utxos[tx.hash]) {
+                    utxos[tx.hash] = {};
                   }
-                });
-            };
-            iterate();
-          })
-          .catch(e => {
-            reject(Errors.u2f);
+                  utxos[tx.hash][output.output_index] = tx;
+                }
+              }
+            });
+
+            tx.inputs.forEach(input => {
+              if (input.address === address) {
+                if (utxos.hasOwnProperty(input.output_hash)) {
+                  delete utxos[input.output_hash][input.output_index];
+                } else {
+                  if (!spent[input.output_hash]) {
+                    spent[input.output_hash] = {};
+                  }
+                  spent[input.output_hash][input.output_index] = true;
+                }
+              }
+            });
           });
-      }).catch(e => {
-        throw e;
-      });
+          return [utxos, address];
+        } else {
+          iterate(data.txs[data.txs.length - 1].block.hash);
+        }
+      };
+      const d = await iterate();
       this.onPrepared(d);
     } catch (e) {
-      this.onError(e);
+      this.onError(Errors.networkError);
     }
   };
 
-  onPrepared = ([utxos, address]) => {
-    var balance = 0;
-    var inputs = 0;
+  onPrepared = d => {
+    const utxos = d[0];
+    let balance = 0;
+    let inputs = 0;
     for (var utxo in utxos) {
       if (utxos.hasOwnProperty(utxo)) {
         for (var index in utxos[utxo]) {
@@ -218,28 +220,28 @@ class FundsTransfer extends Component {
         prepared: true,
         running: false,
         balance: balance,
-        address: address
+        address: d[1]
       });
     } else {
+      let txSize = Networks[this.state.coin].handleFeePerByte
+        ? estimateTransactionSize(inputs, 1, this.state.segwit).max
+        : Math.floor(
+            estimateTransactionSize(inputs, 1, this.state.segwit).max / 1000
+          ) + 1;
       this.setState({
         empty: false,
-        txSize: Networks[this.state.coin].handleFeePerByte
-          ? estimateTransactionSize(inputs, 1, this.state.segwit).max
-          : estimateTransactionSize(inputs, 1, this.state.segwit).max / 1000,
+        txSize,
         prepared: true,
         running: false,
         utxos: utxos,
         balance: balance,
-        address: address,
+        address: d[1],
         customFeesVal: 0,
         fees:
-          estimateTransactionSize(inputs, 1, this.state.segwit).max *
-            this.state.standardFees[6] <
-          balance
-            ? estimateTransactionSize(inputs, 1, this.state.segwit).max *
-              this.state.standardFees[6]
+          txSize * this.state.standardFees[6] < balance
+            ? txSize * this.state.standardFees[6]
             : 0,
-        customFees: this.state.standardFees[6] >= balance
+        customFees: txSize * this.state.standardFees[6] >= balance
       });
     }
   };
@@ -247,7 +249,8 @@ class FundsTransfer extends Component {
   send = async () => {
     this.setState({ running: true, done: false, error: false });
     try {
-      let tx = await createPaymentTransaction(
+      let tx;
+      tx = await createPaymentTransaction(
         this.state.destination,
         this.state.balance - this.state.fees,
         this.state.utxos,
@@ -262,27 +265,48 @@ class FundsTransfer extends Component {
         Networks[this.state.coin].apiName +
         "/transactions/send";
       console.log("res", tx);
-      let res = await fetch(path, {
-        headers: {
-          "Content-Type": "application/json",
-          "Content-Length": JSON.stringify(body).length
-        },
-        method: "post",
-        body
-      });
-      let data = await res.json();
-      this.onSent(data);
+      let res;
+      try {
+        res = await fetch(path, {
+          headers: {
+            "Content-Type": "application/json",
+            "Content-Length": JSON.stringify(body).length
+          },
+          method: "post",
+          body
+        });
+        if (!res.ok) {
+          throw "not ok";
+        }
+      } catch (e) {
+        if (e == "not ok") {
+          let err = await res.text();
+          err = JSON.parse(err);
+          console.log(err);
+          err = JSON.parse(err.error);
+          throw Errors.sendFail + err;
+        } else {
+          throw Errors.networkError;
+        }
+      }
+      this.onSent(res);
     } catch (e) {
       this.onError(e);
     }
   };
 
-  onSent = tx => {
+  onSent = async tx => {
+    let error = false;
+    const json = await tx.json();
+    if (!json) {
+      console.log(error);
+      error = tx;
+    }
     this.setState({
       prepared: false,
       running: false,
-      done: tx.result,
-      error: !tx.result ? Errors.sendFail : false
+      done: json.result,
+      error
     });
   };
 
@@ -300,15 +324,16 @@ class FundsTransfer extends Component {
 
     let feeSelect = [];
     Object.keys(VALIDATIONS).forEach(blocks => {
-      feeSelect.push(
-        <option
-          value={this.state.standardFees[blocks]}
-          key={blocks}
-          selected={blocks == "6"}
-        >
-          {VALIDATIONS[blocks]} :{this.state.standardFees[blocks]}
-        </option>
-      );
+      if (
+        this.state.standardFees[blocks] * this.state.txSize <
+        this.state.balance
+      ) {
+        feeSelect.push(
+          <option value={this.state.standardFees[blocks]} key={blocks}>
+            {VALIDATIONS[blocks]} :{this.state.standardFees[blocks]}
+          </option>
+        );
+      }
     });
     feeSelect.push(
       <option value={false} key={0} selected={this.state.customFees}>
@@ -320,20 +345,21 @@ class FundsTransfer extends Component {
       <div className="FundsTransfer">
         <div className="alert">
           {this.state.error && (
-            <Alert bsStyle="warning">
-              <strong>Oups!</strong>
+            <Alert bsStyle="danger">
+              <strong>Operation aborted</strong>
               <p>{this.state.error}</p>
             </Alert>
           )}
-          {this.state.empty && (
-            <Alert bsStyle="warning">
-              <strong>Empty address</strong>
-              <p>
-                The address {this.state.address} has no{" "}
-                {Networks[this.state.coin].unit} on it.{" "}
-              </p>
-            </Alert>
-          )}
+          {this.state.empty &&
+            !this.state.error && (
+              <Alert bsStyle="warning">
+                <strong>Empty address</strong>
+                <p>
+                  The address {this.state.address} has no{" "}
+                  {Networks[this.state.coin].unit} on it.{" "}
+                </p>
+              </Alert>
+            )}
           {this.state.done && (
             <Alert bsStyle="success">
               <strong>Transaction broadcasted!</strong>
@@ -370,27 +396,28 @@ class FundsTransfer extends Component {
               disabled={this.state.running || this.state.prepared}
             />
             <FormControl.Feedback />
+
+            <ButtonToolbar style={{ marginTop: "10px" }}>
+              {!this.state.prepared && (
+                <Button
+                  bsSize="large"
+                  disabled={this.state.running}
+                  onClick={this.prepare}
+                >
+                  Recover Path
+                </Button>
+              )}
+              {this.state.prepared && (
+                <Button
+                  bsSize="large"
+                  disabled={this.state.running}
+                  onClick={this.reset}
+                >
+                  Change Path
+                </Button>
+              )}
+            </ButtonToolbar>
           </FormGroup>
-          <ButtonToolbar>
-            {!this.state.prepared && (
-              <Button
-                bsSize="large"
-                disabled={this.state.running}
-                onClick={this.prepare}
-              >
-                Recover Path
-              </Button>
-            )}
-            {this.state.prepared && (
-              <Button
-                bsSize="large"
-                disabled={this.state.running}
-                onClick={this.reset}
-              >
-                Change Path
-              </Button>
-            )}
-          </ButtonToolbar>
         </form>
 
         {this.state.prepared && (

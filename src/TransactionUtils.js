@@ -5,6 +5,7 @@ import Transport from "@ledgerhq/hw-transport-u2f";
 import AppBtc from "@ledgerhq/hw-app-btc";
 import { Buffer } from "buffer";
 import zip from "lodash/zip";
+import Errors from "./Errors";
 
 export var estimateTransactionSize = (
   inputsCount,
@@ -194,34 +195,40 @@ export var createPaymentTransaction = async (
 ) => {
   amount = Math.floor(amount);
   let indexes = [];
-  let apiCalls = [];
+  let txs = [];
   const devices = await Transport.list();
   if (devices.length === 0) throw "no device";
-  const transport = await Transport.open(devices[0], 60);
+  const transport = await Transport.open(devices[0]);
+  transport.setExchangeTimeout(60000);
+  transport.setDebugMode(true);
   const btc = new AppBtc(transport);
-  Object.keys(utxos).forEach(h => {
-    Object.keys(utxos[h]).forEach(i => {
-      indexes.push(parseInt(i));
-      var path =
-        "https://api.ledgerwallet.com/blockchain/v2/" +
-        Networks[coin].apiName +
-        "/transactions/" +
-        h +
-        "/hex";
-      apiCalls.push(
-        fetch(path)
-          .then(res => res.json())
-          .then(data =>
-            btc.splitTransaction(
-              data[0].hex,
-              Networks[coin].isSegwitSupported,
-              Networks[coin].hasTimestamp
-            )
+  try {
+    for (let h of Object.keys(utxos)) {
+      for (let i of Object.keys(utxos[h])) {
+        indexes.push(parseInt(i));
+        let path =
+          "https://api.ledgerwallet.com/blockchain/v2/" +
+          Networks[coin].apiName +
+          "/transactions/" +
+          h +
+          "/hex";
+        const res = await fetch(path);
+        if (!res.ok) {
+          throw "not ok";
+        }
+        const data = await res.json();
+        txs.push(
+          btc.splitTransaction(
+            data[0].hex,
+            Networks[coin].isSegwitSupported,
+            Networks[coin].areTransactionTimestamped
           )
-      );
-    });
-  });
-  const txs = await Promise.all(apiCalls);
+        );
+      }
+    }
+  } catch (e) {
+    throw Errors.networkError;
+  }
   const inputs = zip(txs, indexes);
   const [outputScript, p2sh] = createOutputScript(
     recipientAddress,
@@ -234,9 +241,11 @@ export var createPaymentTransaction = async (
     undefined,
     outputScript.toString("hex"),
     undefined,
-    undefined,
+    Networks[coin].sigHash,
     p2sh,
-    Networks[coin].hasTimestamp ? Date.now() : undefined
+    Networks[coin].areTransactionTimestamped
+      ? Math.floor(Date.now() / 1000) - 15 * 60
+      : undefined
   );
   return res;
 };

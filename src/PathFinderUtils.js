@@ -4,7 +4,7 @@ import Networks from "./Networks";
 import bitcoin from "bitcoinjs-lib";
 import bs58 from "bs58";
 import padStart from "lodash/padStart";
-import Errors from "./libs/Errors";
+import Errors from "./Errors";
 
 function parseHexString(str) {
   var result = [];
@@ -81,6 +81,7 @@ var initialize = async (network, coin, account, segwit) => {
   const devices = await Transport.list();
   if (devices.length === 0) throw "no device";
   const transport = await Transport.open(devices[0]);
+  transport.setExchangeTimeout(2000);
   const btc = new AppBtc(transport);
   var purpose = segwit ? "49'/" : "44'/";
   var prevPath = purpose + coin + "'";
