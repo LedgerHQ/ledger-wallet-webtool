@@ -39,15 +39,17 @@ onmessage = function(params) {
           params.data.segwit
         );
         response.push({ index: i, path: prefix + path, address });
-        if (address == params.data.address) {
+        if (address === params.data.address) {
           postMessage({ done: true, response });
           close();
         } else if (response.length > params.data.batchSize - 1) {
           postMessage({ response });
           response = [];
         }
-        if (j == 1) {
-          nextPath(++i);
+        if (j === 1) {
+          setTimeout(() => {
+            nextPath(++i);
+          }, 0);
         }
       }
     } else {
