@@ -129,7 +129,6 @@ export var findPath = async (params, onUpdate, onDone, onError) => {
     console.log("success initialized", xpub58);
     params.xpub58 = xpub58;
     params.network = toPrefixBuffer(Networks[params.coin].bitcoinjs);
-    console.log("network", params.network, typeof params.network.messagePrefix);
 
     derivationWorker.onmessage = event => {
       onUpdate(event.data.response);
