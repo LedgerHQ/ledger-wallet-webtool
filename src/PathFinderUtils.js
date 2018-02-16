@@ -119,46 +119,50 @@ export var findPath = async (params, onUpdate, onDone, onError) => {
   } else {
     onError("You need to use Google Chrome");
   }
-  try {
-    let xpub58 = await initialize(
-      parseInt(params.coin),
-      parseInt(params.coinPath, 10),
-      parseInt(params.account, 10),
-      params.segwit
-    );
-    console.log("success initialized", xpub58);
-    params.xpub58 = xpub58;
-    params.network = toPrefixBuffer(Networks[params.coin].bitcoinjs);
-
-    derivationWorker.onmessage = event => {
-      onUpdate(event.data.response);
-      if (event.data.done) {
-        onDone();
-      }
-      if (event.data.failed) {
-        onError("The address is not from this account");
-      }
-    };
-    derivationWorker.onerror = error => {
-      onError("Derivation error: " + error.message);
-      derivationWorker.terminate();
-    };
-    derivationWorker.postMessage(params);
-    return () => {
-      derivationWorker.terminate();
-    };
-  } catch (e) {
-    throw Errors.u2f;
+  if (!params.useXpub) {
+    try {
+      let xpub58 = await initialize(
+        parseInt(params.coin),
+        parseInt(params.coinPath, 10),
+        parseInt(params.account, 10),
+        params.segwit
+      );
+      params.xpub58 = xpub58;
+      console.log("success initialized", xpub58);
+    } catch (e) {
+      throw Errors.u2f;
+    }
   }
+  params.network = toPrefixBuffer(Networks[params.coin].bitcoinjs);
+
+  derivationWorker.onmessage = event => {
+    onUpdate(event.data.response);
+    if (event.data.done) {
+      onDone();
+    }
+    if (event.data.failed) {
+      onError("The address is not from this account");
+    }
+  };
+  derivationWorker.onerror = error => {
+    onError("Derivation error: " + error.message);
+    derivationWorker.terminate();
+  };
+  derivationWorker.postMessage(params);
+  return () => {
+    derivationWorker.terminate();
+  };
 };
 
-export var findAddress = async (path, segwit, coin) => {
-  const xpub58 = await initialize(
-    coin,
-    path.split("/")[1].replace("'", ""),
-    path.split("/")[2].replace("'", ""),
-    segwit
-  );
+export var findAddress = async (path, segwit, coin, xpub58) => {
+  if (!xpub58) {
+    xpub58 = await initialize(
+      coin,
+      path.split("/")[1].replace("'", ""),
+      path.split("/")[2].replace("'", ""),
+      segwit
+    );
+  }
   var script = segwit
     ? Networks[coin].bitcoinjs.scriptHash
     : Networks[coin].bitcoinjs.pubKeyHash;

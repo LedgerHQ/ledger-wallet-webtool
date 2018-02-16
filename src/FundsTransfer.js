@@ -7,7 +7,9 @@ import {
   FormGroup,
   ControlLabel,
   ButtonToolbar,
-  Alert
+  Alert,
+  DropdownButton,
+  MenuItem
 } from "react-bootstrap";
 import Networks from "./Networks";
 import { findAddress } from "./PathFinderUtils";
@@ -46,7 +48,9 @@ class FundsTransfer extends Component {
       balance: 0,
       path: "44'/128'/0'/0/2",
       utxos: {},
-      txSize: 0
+      txSize: 0,
+      useXpub: false,
+      xpub58: ""
     };
   }
 
@@ -98,6 +102,14 @@ class FundsTransfer extends Component {
     }
   };
 
+  handleChangeUseXpub = e => {
+    this.setState({ useXpub: e });
+  };
+
+  handleChangeXpub = e => {
+    this.setState({ xpub58: e.target.value.replace(/\s/g, "") });
+  };
+
   handleEditFees = e => {
     if (e.target.value * this.state.txSize < this.state.balance) {
       this.setState({
@@ -140,7 +152,8 @@ class FundsTransfer extends Component {
       address = await findAddress(
         this.state.path,
         this.state.segwit,
-        this.state.coin
+        this.state.coin,
+        this.state.useXpub ? this.state.xpub58 : undefined
       );
     } catch (e) {
       this.onError(Errors.u2f);
@@ -311,6 +324,8 @@ class FundsTransfer extends Component {
   };
 
   render() {
+    let derivations = ["Derive from device", "Derive from XPUB"];
+
     var coinSelect = [];
     for (var coin in Networks) {
       if (Networks.hasOwnProperty(coin)) {
@@ -343,34 +358,58 @@ class FundsTransfer extends Component {
 
     return (
       <div className="FundsTransfer">
-        <div className="alert">
-          {this.state.error && (
-            <Alert bsStyle="danger">
-              <strong>Operation aborted</strong>
-              <p>{this.state.error}</p>
-            </Alert>
-          )}
-          {this.state.empty &&
-            !this.state.error && (
-              <Alert bsStyle="warning">
-                <strong>Empty address</strong>
-                <p>
-                  The address {this.state.address} has no{" "}
-                  {Networks[this.state.coin].unit} on it.{" "}
-                </p>
-              </Alert>
-            )}
-          {this.state.done && (
-            <Alert bsStyle="success">
-              <strong>Transaction broadcasted!</strong>
+        {this.state.error && (
+          <Alert bsStyle="danger">
+            <strong>Operation aborted</strong>
+            <p>{this.state.error}</p>
+          </Alert>
+        )}
+        {this.state.empty &&
+          !this.state.error && (
+            <Alert bsStyle="warning">
+              <strong>Empty address</strong>
               <p>
-                Please check online for confirmations. TX : {this.state.done}
+                The address {this.state.address} has no{" "}
+                {Networks[this.state.coin].unit} on it.{" "}
               </p>
             </Alert>
           )}
-        </div>
+        {this.state.done && (
+          <Alert bsStyle="success">
+            <strong>Transaction broadcasted!</strong>
+            <p>Please check online for confirmations. TX : {this.state.done}</p>
+          </Alert>
+        )}
         <form onSubmit={this.prepare}>
           <FormGroup controlId="FundsTransfer">
+            <DropdownButton
+              title={this.state.useXpub ? derivations[1] : derivations[0]}
+              disabled={this.state.running || this.state.paused}
+              bsStyle="primary"
+              bsSize="medium"
+              style={{ marginBottom: "15px" }}
+            >
+              <MenuItem onClick={() => this.handleChangeUseXpub(false)}>
+                {" "}
+                {derivations[0]}{" "}
+              </MenuItem>
+              <MenuItem onClick={() => this.handleChangeUseXpub(true)}>
+                {" "}
+                {derivations[1]}{" "}
+              </MenuItem>
+            </DropdownButton>
+            <br />
+            {this.state.useXpub && (
+              <div>
+                <ControlLabel>XPUB</ControlLabel>
+                <FormControl
+                  type="text"
+                  value={this.state.xpub58}
+                  onChange={this.handleChangeXpub}
+                  disabled={this.state.running || this.state.prepared}
+                />
+              </div>
+            )}
             <ControlLabel>Currency</ControlLabel>
             <FormControl
               componentClass="select"
@@ -396,7 +435,7 @@ class FundsTransfer extends Component {
               disabled={this.state.running || this.state.prepared}
             />
             <FormControl.Feedback />
-
+            <br />
             <ButtonToolbar style={{ marginTop: "10px" }}>
               {!this.state.prepared && (
                 <Button

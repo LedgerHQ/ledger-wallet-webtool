@@ -9,7 +9,9 @@ import {
   FormGroup,
   ControlLabel,
   ButtonToolbar,
-  Alert
+  Alert,
+  DropdownButton,
+  MenuItem
 } from "react-bootstrap";
 
 import { BootstrapTable, TableHeaderColumn } from "react-bootstrap-table";
@@ -34,7 +36,9 @@ class PathFinder extends Component {
         coin: "1",
         index: "0",
         segwit: true,
-        error: false
+        error: false,
+        useXpub: false,
+        xpub58: ""
       };
     }
   }
@@ -54,6 +58,13 @@ class PathFinder extends Component {
     this.setState({ address: e.target.value.replace(/\s/g, "") });
   };
 
+  handleChangeUseXpub = e => {
+    this.setState({ useXpub: e });
+  };
+
+  handleChangeXpub = e => {
+    this.setState({ xpub58: e.target.value.replace(/\s/g, "") });
+  };
   handleChangeAccount = e => {
     this.setState({ account: e.target.value });
   };
@@ -116,14 +127,16 @@ class PathFinder extends Component {
           "coinPath",
           "coin",
           "segwit",
-          "batchSize"
+          "batchSize",
+          "xpub58",
+          "useXpub"
         ]),
         this.onUpdate,
         this.onDone,
         this.onError
       );
     } catch (e) {
-      this.onError(Errors.u2f);
+      this.onError(e);
     }
   };
 
@@ -163,11 +176,40 @@ class PathFinder extends Component {
       launchButton = undefined;
     }
 
+    let derivations = ["Derive from device", "Derive from XPUB"];
+
     return (
       <div className="Finder">
-        This is Path finder
         <form>
           <FormGroup controlId="pathSearch">
+            <DropdownButton
+              title={this.state.useXpub ? derivations[1] : derivations[0]}
+              disabled={this.state.running || this.state.paused}
+              bsStyle="primary"
+              bsSize="medium"
+              style={{ marginBottom: "15px" }}
+            >
+              <MenuItem onClick={() => this.handleChangeUseXpub(false)}>
+                {" "}
+                {derivations[0]}{" "}
+              </MenuItem>
+              <MenuItem onClick={() => this.handleChangeUseXpub(true)}>
+                {" "}
+                {derivations[1]}{" "}
+              </MenuItem>
+            </DropdownButton>
+            <br />
+            {this.state.useXpub && (
+              <div>
+                <ControlLabel>XPUB</ControlLabel>
+                <FormControl
+                  type="text"
+                  value={this.state.xpub58}
+                  onChange={this.handleChangeXpub}
+                  disabled={this.state.running || this.state.paused}
+                />
+              </div>
+            )}
             <ControlLabel>Currency</ControlLabel>
             <FormControl
               componentClass="select"
@@ -201,6 +243,7 @@ class PathFinder extends Component {
               onChange={this.handleChangeAccount}
               disabled={this.state.running || this.state.paused}
             />
+
             <ControlLabel>Start index</ControlLabel>
             <FormControl
               type="text"
