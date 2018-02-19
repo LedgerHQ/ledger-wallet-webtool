@@ -297,7 +297,7 @@ class FundsTransfer extends Component {
           err = JSON.parse(err);
           console.log(err);
           err = JSON.parse(err.error);
-          throw Errors.sendFail + err;
+          throw Errors.sendFail + err.error.message;
         } else {
           throw Errors.networkError;
         }
