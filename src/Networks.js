@@ -258,8 +258,8 @@ const networks = {
     bitcoinjs: {
       messagePrefix: "Zcash Signed Message:",
       bip32: { public: 76067358, private: 87393172 },
-      pubKeyHash: 7352,
-      scriptHash: 7357,
+      pubKeyHash: new Uint8Array([0x1c, 0xb8]) /*7352*/,
+      scriptHash: new Uint8Array([0x1c, 0xbd]) /*7357*/,
       wif: 128
     },
     isSegwitSupported: false,
