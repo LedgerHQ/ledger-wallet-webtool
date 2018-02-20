@@ -77,15 +77,15 @@ function createXPUB(
   return xpub;
 }
 
-var initialize = async (network, purpose, coin, account, segwit) => {
+export var initialize = async (network, purpose, coin, account, segwit) => {
   const devices = await Transport.list();
   if (devices.length === 0) throw "no device";
   const transport = await Transport.open(devices[0]);
   transport.setExchangeTimeout(2000);
   const btc = new AppBtc(transport);
-  var prevPath = purpose + "'/" + coin + "'";
+  var prevPath = purpose + "/" + coin;
   const finalize = async fingerprint => {
-    var path = prevPath + "/" + account + "'";
+    var path = prevPath + "/" + account;
     let nodeData = await btc.getWalletPublicKey(path, undefined, segwit);
     var publicKey = compressPublicKey(nodeData.publicKey);
     //console.log("puikeyu", publicKey);
@@ -105,7 +105,7 @@ var initialize = async (network, purpose, coin, account, segwit) => {
   var publicKey = compressPublicKey(nodeData.publicKey);
   publicKey = parseHexString(publicKey);
   var result = bitcoin.crypto.sha256(publicKey);
-  var result = bitcoin.crypto.ripemd160(result);
+  result = bitcoin.crypto.ripemd160(result);
   var fingerprint =
     ((result[0] << 24) | (result[1] << 16) | (result[2] << 8) | result[3]) >>>
     0;
@@ -121,9 +121,10 @@ export var findPath = async (params, onUpdate, onDone, onError) => {
   if (!params.useXpub) {
     try {
       let xpub58 = await initialize(
-        parseInt(params.coin),
-        parseInt(params.coinPath, 10),
-        parseInt(params.account, 10),
+        parseInt(params.coin, 10),
+        params.segwit ? "49'" : "44'",
+        parseInt(params.coinPath, 10) + "'",
+        parseInt(params.account, 10) + "'",
         params.segwit
       );
       params.xpub58 = xpub58;
@@ -157,9 +158,9 @@ export var findAddress = async (path, segwit, coin, xpub58) => {
   if (!xpub58) {
     xpub58 = await initialize(
       coin,
-      path.split("/")[0].replace("'", ""),
-      path.split("/")[1].replace("'", ""),
-      path.split("/")[2].replace("'", ""),
+      path.split("/")[0],
+      path.split("/")[1],
+      path.split("/")[2],
       segwit
     );
   }
