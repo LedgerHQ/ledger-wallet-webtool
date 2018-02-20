@@ -77,14 +77,13 @@ function createXPUB(
   return xpub;
 }
 
-var initialize = async (network, coin, account, segwit) => {
+var initialize = async (network, purpose, coin, account, segwit) => {
   const devices = await Transport.list();
   if (devices.length === 0) throw "no device";
   const transport = await Transport.open(devices[0]);
   transport.setExchangeTimeout(2000);
   const btc = new AppBtc(transport);
-  var purpose = segwit ? "49'/" : "44'/";
-  var prevPath = purpose + coin + "'";
+  var prevPath = purpose + "'/" + coin + "'";
   const finalize = async fingerprint => {
     var path = prevPath + "/" + account + "'";
     let nodeData = await btc.getWalletPublicKey(path, undefined, segwit);
@@ -158,6 +157,7 @@ export var findAddress = async (path, segwit, coin, xpub58) => {
   if (!xpub58) {
     xpub58 = await initialize(
       coin,
+      path.split("/")[0].replace("'", ""),
       path.split("/")[1].replace("'", ""),
       path.split("/")[2].replace("'", ""),
       segwit
