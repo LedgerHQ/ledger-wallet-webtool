@@ -56,6 +56,7 @@ const networks = {
       wif: 128
     },
     sigHash: 0x41,
+    xpub: 0x0488b21e,
     isSegwitSupported: true,
     handleFeePerByte: true
   },
