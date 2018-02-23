@@ -4,7 +4,7 @@
   "homepage": "./",
   "private": true,
   "dependencies": {
-    "@ledgerhq/hw-app-btc": "^4.2.1",
+    "@ledgerhq/hw-app-btc": "4.2.2",
     "@ledgerhq/hw-transport-u2f": "^4.2.0",
     "autoprefixer": "7.1.6",
     "babel-core": "6.26.0",
