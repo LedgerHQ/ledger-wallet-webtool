@@ -33,7 +33,7 @@ class FundsTransfer extends Component {
       address: "",
       prepared: false,
       destination: "",
-      coin: "128",
+      coin: "1",
       error: false,
       segwit: true,
       fees: 0,
@@ -46,7 +46,7 @@ class FundsTransfer extends Component {
         6: 1000
       },
       balance: 0,
-      path: "44'/128'/0'/0/2",
+      path: "49'/1'/0'/0/0",
       utxos: {},
       txSize: 0,
       useXpub: false,
