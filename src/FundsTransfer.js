@@ -158,6 +158,7 @@ class FundsTransfer extends Component {
     } catch (e) {
       this.onError(Errors.u2f);
     }
+
     try {
       var blockHash = "";
       var apiPath =
@@ -169,11 +170,11 @@ class FundsTransfer extends Component {
       const iterate = async (blockHash = "") => {
         const res = await fetch(apiPath + blockHash);
         const data = await res.json();
+        txs = txs.concat(data.txs);
         if (!data.truncated) {
-          txs = txs.concat(data.txs);
+          console.log(txs);
           var utxos = {};
           txs.forEach(tx => {
-            console.log(tx.hash);
             tx.outputs.forEach(output => {
               if (output.address === address) {
                 if (!spent[tx.hash]) {
@@ -187,7 +188,6 @@ class FundsTransfer extends Component {
                 }
               }
             });
-
             tx.inputs.forEach(input => {
               if (input.address === address) {
                 if (utxos.hasOwnProperty(input.output_hash)) {
@@ -203,10 +203,12 @@ class FundsTransfer extends Component {
           });
           return [utxos, address];
         } else {
-          iterate(data.txs[data.txs.length - 1].block.hash);
+          return await iterate(
+            "&blockHash=" + data.txs[data.txs.length - 1].block.hash
+          );
         }
       };
-      const d = await iterate();
+      let d = await iterate();
       this.onPrepared(d);
     } catch (e) {
       this.onError(Errors.networkError);
