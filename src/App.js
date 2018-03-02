@@ -4,6 +4,7 @@ import Home from "./Home";
 import PathFinder from "./PathFinder";
 import FundsTransfer from "./FundsTransfer";
 import AddressChecker from "./AddressChecker";
+import TxChecker from "./TxChecker";
 import "./App.css";
 
 class App extends Component {
@@ -32,6 +33,9 @@ class App extends Component {
       case "addressChecker":
         content = <AddressChecker />;
         break;
+      case "txChecker":
+        content = <TxChecker />;
+        break;
       default:
         content = <Home />;
         break;
@@ -52,14 +56,14 @@ class App extends Component {
               href="#"
               onClick={() => this.handleNav("pathFinder")}
             >
-              Path Finder
+              Find Path
             </NavItem>
             <NavItem
               eventKey={1}
               href="#"
               onClick={() => this.handleNav("fundsTransfer")}
             >
-              Funds Transfer
+              Transfer Funds
             </NavItem>
             <NavItem
               eventKey={1}
@@ -67,6 +71,13 @@ class App extends Component {
               onClick={() => this.handleNav("addressChecker")}
             >
               Check Address
+            </NavItem>
+            <NavItem
+              eventKey={1}
+              href="#"
+              onClick={() => this.handleNav("txChecker")}
+            >
+              Check Tx
             </NavItem>
           </Nav>
         </Navbar>
