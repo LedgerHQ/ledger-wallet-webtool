@@ -204,39 +204,38 @@ export var createPaymentTransaction = async (
   const btc = new AppBtc(transport);
   try {
     for (let h of Object.keys(utxos)) {
-      let uindex = Object.keys(utxos[h]);
-      if (uindex.length !== 0) {
-        let path =
-          "https://api.ledgerwallet.com/blockchain/v2/" +
-          Networks[coin].apiName +
-          "/transactions/" +
-          h +
-          "/hex";
-        const res = await fetch(path);
-        if (!res.ok) {
-          throw "not ok";
-        }
-        const data = await res.json();
-        let tx = btc.splitTransaction(
-          data[0].hex,
-          Networks[coin].isSegwitSupported,
-          Networks[coin].areTransactionTimestamped
-        );
-        for (let i of uindex) {
-          indexes.push(parseInt(i));
-          txs.push(tx);
-        }
+      let path =
+        "https://api.ledgerwallet.com/blockchain/v2/" +
+        Networks[coin].apiName +
+        "/transactions/" +
+        h +
+        "/hex";
+      const res = await fetch(path);
+      if (!res.ok) {
+        throw "not ok";
+      }
+      const data = await res.json();
+      let tx = btc.splitTransaction(
+        data[0].hex,
+        Networks[coin].isSegwitSupported,
+        Networks[coin].areTransactionTimestamped
+      );
+      for (let i in utxos[h]) {
+        indexes.push(parseInt(i, 10));
+        txs.push(tx);
       }
     }
   } catch (e) {
     throw Errors.networkError;
   }
   const inputs = zip(txs, indexes);
+  console.log("inputs", inputs);
   const [outputScript, p2sh] = createOutputScript(
     recipientAddress,
     amount,
     coin
   );
+  console.log("output script", outputScript);
   const res = await btc.createPaymentTransactionNew(
     inputs,
     Array(indexes.length).fill(path),
