@@ -177,6 +177,16 @@ class FundsTransfer extends Component {
           console.log(txs);
           var utxos = {};
           txs.forEach(tx => {
+            tx.inputs.forEach(input => {
+              if (input.address === address) {
+                if (!spent[input.output_hash]) {
+                  spent[input.output_hash] = {};
+                }
+                spent[input.output_hash][input.output_index] = true;
+              }
+            });
+          });
+          txs.forEach(tx => {
             tx.outputs.forEach(output => {
               if (output.address === address) {
                 if (!spent[tx.hash]) {
@@ -187,18 +197,6 @@ class FundsTransfer extends Component {
                     utxos[tx.hash] = {};
                   }
                   utxos[tx.hash][output.output_index] = tx;
-                }
-              }
-            });
-            tx.inputs.forEach(input => {
-              if (input.address === address) {
-                if (utxos.hasOwnProperty(input.output_hash)) {
-                  delete utxos[input.output_hash][input.output_index];
-                } else {
-                  if (!spent[input.output_hash]) {
-                    spent[input.output_hash] = {};
-                  }
-                  spent[input.output_hash][input.output_index] = true;
                 }
               }
             });
