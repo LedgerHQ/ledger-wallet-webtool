@@ -204,8 +204,8 @@ export var createPaymentTransaction = async (
   const btc = new AppBtc(transport);
   try {
     for (let h of Object.keys(utxos)) {
-      for (let i of Object.keys(utxos[h])) {
-        indexes.push(parseInt(i));
+      let uindex = Object.keys(utxos[h]);
+      if (uindex.length !== 0) {
         let path =
           "https://api.ledgerwallet.com/blockchain/v2/" +
           Networks[coin].apiName +
@@ -217,13 +217,15 @@ export var createPaymentTransaction = async (
           throw "not ok";
         }
         const data = await res.json();
-        txs.push(
-          btc.splitTransaction(
-            data[0].hex,
-            Networks[coin].isSegwitSupported,
-            Networks[coin].areTransactionTimestamped
-          )
+        let tx = btc.splitTransaction(
+          data[0].hex,
+          Networks[coin].isSegwitSupported,
+          Networks[coin].areTransactionTimestamped
         );
+        for (let i of uindex) {
+          indexes.push(parseInt(i));
+          txs.push(tx);
+        }
       }
     }
   } catch (e) {

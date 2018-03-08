@@ -59,14 +59,13 @@ class AddressChecker extends Component {
   check = async () => {
     this.setState({ running: true, done: false, error: false });
     let xpub58;
-
-    const devices = await Transport.list();
-    if (devices.length === 0) throw "no device";
-    const transport = await Transport.open(devices[0]);
-    transport.setExchangeTimeout(30000);
-    transport.setDebugMode(true);
-    const btc = new AppBtc(transport);
     try {
+      const devices = await Transport.list();
+      if (devices.length === 0) throw "no device";
+      const transport = await Transport.open(devices[0]);
+      transport.setExchangeTimeout(30000);
+      transport.setDebugMode(true);
+      const btc = new AppBtc(transport);
       xpub58 = await initialize(
         parseInt(this.state.coin, 10),
         this.state.path.split("/")[0],
