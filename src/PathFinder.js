@@ -1,6 +1,8 @@
 import React, { Component } from "react";
 import Networks from "./Networks";
 import Errors from "./Errors";
+import "react-bootstrap-table/dist/react-bootstrap-table.min.css";
+
 import {
   Button,
   Checkbox,

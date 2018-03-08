@@ -1,4 +1,6 @@
 import React, { Component } from "react";
+import fetchWithRetries from "./FetchWithRetries";
+
 import {
   Button,
   Checkbox,
@@ -129,7 +131,7 @@ class FundsTransfer extends Component {
         "https://api.ledgerwallet.com/blockchain/v2/" +
         Networks[this.state.coin].apiName +
         "/fees";
-      let response = await fetch(path);
+      let response = await fetchWithRetries(path);
       let data = await response.json();
       this.setState({ standardFees: data });
     } catch (e) {}
@@ -168,7 +170,7 @@ class FundsTransfer extends Component {
         address +
         "/transactions?noToken=true";
       const iterate = async (blockHash = "") => {
-        const res = await fetch(apiPath + blockHash);
+        const res = await fetchWithRetries(apiPath + blockHash);
         const data = await res.json();
         txs = txs.concat(data.txs);
         if (!data.truncated) {
@@ -282,7 +284,7 @@ class FundsTransfer extends Component {
       console.log("res", tx);
       let res;
       try {
-        res = await fetch(path, {
+        res = await fetchWithRetries(path, {
           headers: {
             "Content-Type": "application/json",
             "Content-Length": JSON.stringify(body).length

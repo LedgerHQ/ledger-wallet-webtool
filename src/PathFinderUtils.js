@@ -16,11 +16,13 @@ function parseHexString(str) {
 }
 
 const toPrefixBuffer = network => {
-  network.messagePrefix = Buffer.concat([
-    Buffer.from([network.messagePrefix.length + 1]),
-    Buffer.from(network.messagePrefix + "\n", "utf8")
-  ]).toString("hex");
-  return network;
+  return {
+    ...network,
+    messagePrefix: Buffer.concat([
+      Buffer.from([network.messagePrefix.length + 1]),
+      Buffer.from(network.messagePrefix + "\n", "utf8")
+    ]).toString("hex")
+  };
 };
 
 function compressPublicKey(publicKey) {
@@ -82,6 +84,7 @@ export var initialize = async (network, purpose, coin, account, segwit) => {
   if (devices.length === 0) throw "no device";
   const transport = await Transport.open(devices[0]);
   transport.setExchangeTimeout(2000);
+  transport.setDebugMode(true);
   const btc = new AppBtc(transport);
   var prevPath = purpose + "/" + coin;
   const finalize = async fingerprint => {
