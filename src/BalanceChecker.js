@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import { BootstrapTable, TableHeaderColumn } from "react-bootstrap-table";
 import "react-bootstrap-table/dist/react-bootstrap-table.min.css";
 import fetchWithRetries from "./FetchWithRetries";
-import ObjectInspector from "react-object-inspector";
+import Inspector from "react-inspector";
 
 import {
   Button,
@@ -62,27 +62,35 @@ class BalanceChecker extends Component {
   };
 
   handleChangePath = e => {
-    this.setState({ path: e.target.value.replace(/\s/g, ""), done: false });
+    this.setState({
+      path: e.target.value.replace(/\s/g, ""),
+      done: false,
+      result: []
+    });
   };
 
   handleChangeGap = e => {
-    this.setState({ gap: e.target.value, done: false });
+    this.setState({ gap: e.target.value, done: false, result: [] });
   };
 
   handleChangeSegwit = e => {
-    this.setState({ segwit: !this.state.segwit, done: false });
+    this.setState({ segwit: !this.state.segwit, done: false, result: [] });
   };
 
   handleChangeUseXpub = e => {
-    this.setState({ useXpub: e, done: false });
+    this.setState({ useXpub: e, done: false, result: [] });
   };
 
   handleChangeXpub = e => {
-    this.setState({ xpub58: e.target.value.replace(/\s/g, ""), done: false });
+    this.setState({
+      xpub58: e.target.value.replace(/\s/g, ""),
+      done: false,
+      result: []
+    });
   };
 
   handleChangeCoin = e => {
-    this.setState({ coin: e.target.value, done: false });
+    this.setState({ coin: e.target.value, done: false, result: [] });
   };
 
   onUpdate = e => {
@@ -95,12 +103,14 @@ class BalanceChecker extends Component {
 
   addressesOptions = {
     onRowClick: row => {
-      this.setState({
-        selectedTxs: Object.keys(this.state.allTxs[row.address]).map(
-          tx => this.state.allTxs[row.address][tx].display
-        ),
-        selectedTx: false
-      });
+      if (!this.state.running) {
+        this.setState({
+          selectedTxs: Object.keys(this.state.allTxs[row.address]).map(
+            tx => this.state.allTxs[row.address][tx].display
+          ),
+          selectedTx: false
+        });
+      }
     }
   };
 
@@ -123,13 +133,13 @@ class BalanceChecker extends Component {
       empty: false,
       error: false,
       result: [],
-      allTxs: false,
+      allTxs: {},
       selectedTxs: false
     });
     try {
       var emptyStreak = 0;
       let xpub58 = this.state.useXpub
-        ? this.state.xpub58
+        ? await this.state.xpub58
         : await initialize(
             this.state.coin,
             this.state.path.split("/")[0],
@@ -138,7 +148,7 @@ class BalanceChecker extends Component {
             this.state.segwit
           );
       console.log("xpub is", xpub58);
-      const iterate = async (txs, address, spent, blockHash = "") => {
+      const iterate = async (txs, address, balance, blockHash = "") => {
         const res = await fetchWithRetries(apiPath + blockHash);
         const data = await res.json();
         txs = txs.concat(data.txs);
@@ -147,59 +157,47 @@ class BalanceChecker extends Component {
             emptyStreak++;
             return [{}, address];
           } else {
-            var utxos = {};
             allTxs[address] = {};
             txs.forEach(tx => {
               let localBalance = 0;
               tx.outputs.forEach(output => {
                 if (output.address === address) {
-                  if (!spent[tx.hash]) {
-                    spent[tx.hash] = {};
-                  }
-                  if (!spent[tx.hash][output.output_index]) {
-                    if (!utxos[tx.hash]) {
-                      utxos[tx.hash] = {};
-                    }
-                    utxos[tx.hash][output.output_index] = tx;
-                  }
                   localBalance += output.value;
                 }
               });
               tx.inputs.forEach(input => {
                 if (input.address === address) {
-                  if (utxos.hasOwnProperty(input.output_hash)) {
-                    delete utxos[input.output_hash][input.output_index];
-                  } else {
-                    if (!spent[input.output_hash]) {
-                      spent[input.output_hash] = {};
-                    }
-                    spent[input.output_hash][input.output_index] = true;
-                  }
                   localBalance -= input.value;
                 }
               });
+              balance += localBalance;
               allTxs[address][tx.hash] = {
                 display: {
                   time: tx.received_at,
-                  amount: tx.amount,
+                  balance:
+                    (
+                      localBalance /
+                      10 ** Networks[this.state.coin].satoshi
+                    ).toString() +
+                    " " +
+                    Networks[this.state.coin].unit,
                   hash: tx.hash,
                   raw: tx
                 }
               };
             });
-            return [utxos, address];
           }
         } else {
           return await iterate(
             txs,
             address,
-            spent,
+            balance,
             "&blockHash=" + data.txs[data.txs.length - 1].block.hash
           );
         }
+        return balance;
       };
       for (let i = 0; emptyStreak < this.state.gap; i++) {
-        //console.log("i, emptystreak", i, emptyStreak);
         if (this.state.error) {
           break;
         }
@@ -209,8 +207,6 @@ class BalanceChecker extends Component {
           }
           let localPath = [this.state.path, j, i].join("/");
           let address;
-          let txs = [];
-          let spent = {};
           try {
             address = await findAddress(
               localPath,
@@ -228,8 +224,7 @@ class BalanceChecker extends Component {
               "/addresses/" +
               address +
               "/transactions?noToken=true";
-            let d = await iterate(txs, address, spent);
-            let balance = this.getBalance(d);
+            let balance = await iterate([], address, 0);
             total += balance;
             this.onUpdate({
               path: localPath,
@@ -272,21 +267,6 @@ class BalanceChecker extends Component {
     }
   };
 
-  getBalance = d => {
-    const utxos = d[0];
-    let balance = 0;
-    for (var utxo in utxos) {
-      if (utxos.hasOwnProperty(utxo)) {
-        for (var index in utxos[utxo]) {
-          if (utxos[utxo].hasOwnProperty(index)) {
-            balance += utxos[utxo][index].outputs[index].value;
-          }
-        }
-      }
-    }
-    return balance > 0 ? balance : 0;
-  };
-
   render() {
     let derivations = ["Derive from device", "Derive from XPUB"];
 
@@ -303,17 +283,6 @@ class BalanceChecker extends Component {
 
     return (
       <div className="BalanceChecker">
-        {this.state.error && (
-          <Alert bsStyle="danger">
-            <strong>Operation aborted</strong>
-            <p>{this.state.error}</p>
-          </Alert>
-        )}
-        {this.state.done && (
-          <Alert bsStyle="success">
-            <strong>Synchronization finished</strong>
-          </Alert>
-        )}
         <form onSubmit={this.recover}>
           <FormGroup controlId="BalanceChecker">
             <DropdownButton
@@ -380,7 +349,7 @@ class BalanceChecker extends Component {
             <ButtonToolbar style={{ marginTop: "10px" }}>
               {!this.state.running && (
                 <Button bsSize="large" onClick={this.recover}>
-                  Recover Path
+                  Recover account's balances
                 </Button>
               )}
               {this.state.running && (
@@ -390,6 +359,17 @@ class BalanceChecker extends Component {
               )}
             </ButtonToolbar>
           </FormGroup>
+          {this.state.error && (
+            <Alert bsStyle="danger">
+              <strong>Operation aborted</strong>
+              <p>{this.state.error}</p>
+            </Alert>
+          )}
+          {this.state.done && (
+            <Alert bsStyle="success">
+              <strong>Synchronization finished</strong>
+            </Alert>
+          )}
           {this.state.done && (
             <h2>Total on this account: {this.state.totalBalance}</h2>
           )}
@@ -401,11 +381,15 @@ class BalanceChecker extends Component {
           pagination
           options={this.addressesOptions}
         >
-          <TableHeaderColumn dataField="path" isKey={true}>
+          <TableHeaderColumn dataField="path" dataSort={true} isKey={true}>
             Derivation path
           </TableHeaderColumn>
-          <TableHeaderColumn dataField="address">Address</TableHeaderColumn>
-          <TableHeaderColumn dataField="balance">Balance</TableHeaderColumn>
+          <TableHeaderColumn dataField="address" dataSort={true}>
+            Address
+          </TableHeaderColumn>
+          <TableHeaderColumn dataField="balance" dataSort={true}>
+            Balance
+          </TableHeaderColumn>
         </BootstrapTable>
         {this.state.done &&
           this.state.selectedTxs && (
@@ -416,22 +400,36 @@ class BalanceChecker extends Component {
               pagination
               options={this.txsOptions}
             >
-              <TableHeaderColumn dataField="hash" isKey={true}>
+              <TableHeaderColumn dataField="hash" dataSort={true} isKey={true}>
                 Hash
               </TableHeaderColumn>
-              <TableHeaderColumn dataField="amount">Amount</TableHeaderColumn>
-              <TableHeaderColumn dataField="time">Time</TableHeaderColumn>
+              <TableHeaderColumn dataField="balance" dataSort={true}>
+                Balance change
+              </TableHeaderColumn>
+              <TableHeaderColumn dataField="time" dataSort={true}>
+                Time
+              </TableHeaderColumn>
             </BootstrapTable>
           )}
-        {this.state.selectedTx && (
-          <div
-            style={{
-              textAlign: "left"
-            }}
-          >
-            <ObjectInspector data={this.state.selectedTx} />
-          </div>
-        )}
+        {this.state.selectedTx &&
+          this.state.done && (
+            <div
+              style={{
+                textAlign: "left"
+              }}
+            >
+              <Inspector
+                data={this.state.selectedTx}
+                expandLevel={2}
+                style={{
+                  fontSize: "20px"
+                }}
+              />
+              <br />
+              <br />
+              <br />
+            </div>
+          )}
       </div>
     );
   }
