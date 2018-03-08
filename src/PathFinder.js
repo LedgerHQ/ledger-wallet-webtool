@@ -298,17 +298,16 @@ class PathFinder extends Component {
           Addresses scanned: {this.state.result.length}
         </div>
         <BootstrapTable
-          height="400"
           data={this.state.result}
           striped={true}
           hover={true}
           pagination
           exportCSV
         >
-          <TableHeaderColumn dataField="path">
+          <TableHeaderColumn dataField="path" dataSort={true}>
             Derivation path
           </TableHeaderColumn>
-          <TableHeaderColumn dataField="address" isKey={true}>
+          <TableHeaderColumn dataField="address" isKey={true} dataSort={true}>
             Address
           </TableHeaderColumn>
         </BootstrapTable>

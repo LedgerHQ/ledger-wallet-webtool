@@ -1,5 +1,7 @@
 import React, { Component } from "react";
 import util from "util";
+import Inspector from "react-inspector";
+
 import {
   Button,
   Checkbox,
@@ -88,15 +90,6 @@ class AddressChecker extends Component {
           </Alert>
         )}
         {this.state.done &&
-          this.state.result && (
-            <Alert bsStyle="success">
-              <strong>Tx found on Ledger nodes</strong>
-              <p style={{ wordWrap: "break-word" }}>
-                {util.inspect(this.state.result, { depth: null })}
-              </p>
-            </Alert>
-          )}
-        {this.state.done &&
           !this.state.result && (
             <Alert bsStyle="warning">
               <strong>Tx does not exist</strong>
@@ -129,6 +122,23 @@ class AddressChecker extends Component {
             Check if Tx exists
           </Button>
         </ButtonToolbar>
+        <br />
+        <br />
+        {this.state.done &&
+          this.state.result && (
+            <div>
+              <Alert bsStyle="success">
+                <strong>Tx found on Ledger nodes</strong>
+              </Alert>
+              <div
+                style={{
+                  textAlign: "left"
+                }}
+              >
+                <Inspector data={this.state.result} expandLevel={2} />
+              </div>
+            </div>
+          )}
       </div>
     );
   }
