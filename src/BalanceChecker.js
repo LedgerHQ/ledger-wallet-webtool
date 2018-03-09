@@ -21,36 +21,44 @@ import { findAddress, initialize } from "./PathFinderUtils";
 import { estimateTransactionSize } from "./TransactionUtils";
 import Errors from "./Errors";
 var util = require("util");
-
+const initialState = {
+  done: false,
+  running: false,
+  coin: "1",
+  error: false,
+  segwit: true,
+  path: "49'/1'/0'",
+  useXpub: false,
+  xpub58: "",
+  gap: 2,
+  result: [],
+  allTxs: false
+};
 class BalanceChecker extends Component {
   constructor(props) {
     super();
-    this.state = {
-      done: false,
-      running: false,
-      coin: "1",
-      error: false,
-      segwit: true,
-      path: "49'/1'/0'",
-      useXpub: false,
-      xpub58: "",
-      gap: 2,
-      result: [],
-      allTxs: false
-    };
+    if (localStorage.getItem("LedgerBalanceChecker")) {
+      this.state = JSON.parse(localStorage.getItem("LedgerBalanceChecker"));
+    } else {
+      this.state = initialState;
+    }
+  }
+
+  componentWillUnmount() {
+    var state = {};
+    this.interrupt();
+    if (this.state.running) {
+      Object.assign(state, this.state, { running: false });
+    } else {
+      Object.assign(state, this.state);
+    }
+    localStorage.setItem("LedgerBalanceChecker", JSON.stringify(state));
   }
 
   reset = () => {
     // change states.
-    localStorage.removeItem("LedgerFundsTransfer");
-    this.setState({
-      prepared: false,
-      running: false,
-      done: false,
-      empty: false,
-      txs: false,
-      error: false
-    });
+    localStorage.removeItem("LedgerBalanceChecker");
+    this.setState(initialState);
   };
 
   onError = e => {
@@ -97,8 +105,8 @@ class BalanceChecker extends Component {
     this.setState({ result: this.state.result.concat(e) });
   };
 
-  stop = () => {
-    this.setState({ running: false });
+  interrupt = () => {
+    this.stop = true;
   };
 
   addressesOptions = {
@@ -123,6 +131,7 @@ class BalanceChecker extends Component {
   };
 
   recover = async e => {
+    this.stop = false;
     e.preventDefault();
     let total = 0;
     let allTxs = {};
@@ -134,12 +143,13 @@ class BalanceChecker extends Component {
       error: false,
       result: [],
       allTxs: {},
-      selectedTxs: false
+      selectedTxs: false,
+      selectedTx: false
     });
     try {
       var emptyStreak = 0;
       let xpub58 = this.state.useXpub
-        ? await this.state.xpub58
+        ? this.state.xpub58
         : await initialize(
             this.state.coin,
             this.state.path.split("/")[0],
@@ -202,7 +212,7 @@ class BalanceChecker extends Component {
           break;
         }
         for (let j = 0; j < 2; j++) {
-          if (!this.state.running) {
+          if (this.stop) {
             throw "stopped";
           }
           let localPath = [this.state.path, j, i].join("/");
@@ -353,7 +363,7 @@ class BalanceChecker extends Component {
                 </Button>
               )}
               {this.state.running && (
-                <Button bsSize="large" onClick={this.stop}>
+                <Button bsSize="large" onClick={this.interrupt}>
                   Stop
                 </Button>
               )}
