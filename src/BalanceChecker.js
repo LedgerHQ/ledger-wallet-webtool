@@ -155,7 +155,7 @@ class BalanceChecker extends Component {
         if (!data.truncated) {
           if (data.txs.length < 1) {
             emptyStreak++;
-            return [{}, address];
+            return 0;
           } else {
             allTxs[address] = {};
             txs.forEach(tx => {
