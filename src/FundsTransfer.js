@@ -1,4 +1,6 @@
 import React, { Component } from "react";
+import fetchWithRetries from "./FetchWithRetries";
+
 import {
   Button,
   Checkbox,
@@ -129,7 +131,7 @@ class FundsTransfer extends Component {
         "https://api.ledgerwallet.com/blockchain/v2/" +
         Networks[this.state.coin].apiName +
         "/fees";
-      let response = await fetch(path);
+      let response = await fetchWithRetries(path);
       let data = await response.json();
       this.setState({ standardFees: data });
     } catch (e) {}
@@ -158,6 +160,7 @@ class FundsTransfer extends Component {
     } catch (e) {
       this.onError(Errors.u2f);
     }
+
     try {
       var blockHash = "";
       var apiPath =
@@ -167,13 +170,23 @@ class FundsTransfer extends Component {
         address +
         "/transactions?noToken=true";
       const iterate = async (blockHash = "") => {
-        const res = await fetch(apiPath + blockHash);
+        const res = await fetchWithRetries(apiPath + blockHash);
         const data = await res.json();
+        txs = txs.concat(data.txs);
         if (!data.truncated) {
-          txs = txs.concat(data.txs);
+          console.log(txs);
           var utxos = {};
           txs.forEach(tx => {
-            console.log(tx.hash);
+            tx.inputs.forEach(input => {
+              if (input.address === address) {
+                if (!spent[input.output_hash]) {
+                  spent[input.output_hash] = {};
+                }
+                spent[input.output_hash][input.output_index] = true;
+              }
+            });
+          });
+          txs.forEach(tx => {
             tx.outputs.forEach(output => {
               if (output.address === address) {
                 if (!spent[tx.hash]) {
@@ -187,26 +200,15 @@ class FundsTransfer extends Component {
                 }
               }
             });
-
-            tx.inputs.forEach(input => {
-              if (input.address === address) {
-                if (utxos.hasOwnProperty(input.output_hash)) {
-                  delete utxos[input.output_hash][input.output_index];
-                } else {
-                  if (!spent[input.output_hash]) {
-                    spent[input.output_hash] = {};
-                  }
-                  spent[input.output_hash][input.output_index] = true;
-                }
-              }
-            });
           });
           return [utxos, address];
         } else {
-          iterate(data.txs[data.txs.length - 1].block.hash);
+          return await iterate(
+            "&blockHash=" + data.txs[data.txs.length - 1].block.hash
+          );
         }
       };
-      const d = await iterate();
+      let d = await iterate();
       this.onPrepared(d);
     } catch (e) {
       this.onError(Errors.networkError);
@@ -280,7 +282,7 @@ class FundsTransfer extends Component {
       console.log("res", tx);
       let res;
       try {
-        res = await fetch(path, {
+        res = await fetchWithRetries(path, {
           headers: {
             "Content-Type": "application/json",
             "Content-Length": JSON.stringify(body).length

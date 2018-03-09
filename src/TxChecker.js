@@ -1,4 +1,7 @@
 import React, { Component } from "react";
+import util from "util";
+import Inspector from "react-inspector";
+
 import {
   Button,
   Checkbox,
@@ -25,14 +28,12 @@ class AddressChecker extends Component {
   constructor(props) {
     super();
     this.state = {
-      path: "49'/1'/0'/0/0",
-      address: "",
-      xpub58: "",
       error: false,
       done: false,
       running: false,
-      segwit: false,
-      coin: "0"
+      tx: "",
+      coin: "0",
+      result: ""
     };
   }
 
@@ -40,16 +41,12 @@ class AddressChecker extends Component {
     this.setState({
       error: e.toString(),
       running: false,
-      done: false,
-      xpub58: ""
+      done: false
     });
   };
-  handleChangeSegwit = e => {
-    this.setState({ segwit: !this.state.segwit });
-  };
 
-  handleChangePath = e => {
-    this.setState({ path: e.target.value.replace(/\s/g, "") });
+  handleChangeTx = e => {
+    this.setState({ tx: e.target.value.replace(/\s/g, "") });
   };
 
   handleChangeCoin = e => {
@@ -58,33 +55,21 @@ class AddressChecker extends Component {
 
   check = async () => {
     this.setState({ running: true, done: false, error: false });
-    let xpub58;
     try {
-      const devices = await Transport.list();
-      if (devices.length === 0) throw "no device";
-      const transport = await Transport.open(devices[0]);
-      transport.setExchangeTimeout(30000);
-      transport.setDebugMode(true);
-      const btc = new AppBtc(transport);
-      xpub58 = await initialize(
-        parseInt(this.state.coin, 10),
-        this.state.path.split("/")[0],
-        this.state.path.split("/")[1],
-        this.state.path.split("/")[2],
-        this.state.segwit
-      );
+      var path =
+        "https://api.ledgerwallet.com/blockchain/v2/" +
+        Networks[this.state.coin].apiName +
+        "/transactions/" +
+        this.state.tx;
+      let response = await fetch(path);
+      let data = await response.json();
 
-      await btc.getWalletPublicKey(this.state.path, true, this.state.segwit);
+      this.setState({ running: false, done: true, result: data[0] });
     } catch (e) {
-    } finally {
-      if (xpub58) {
-        this.setState({ running: false, done: true, xpub58: xpub58 });
-      } else {
-        this.setState({ running: false, done: false });
-        this.onError("Your device seems unavailable");
-      }
+      this.onError(Errors.networkError);
     }
   };
+
   render() {
     var coinSelect = [];
     for (var coin in Networks) {
@@ -97,19 +82,19 @@ class AddressChecker extends Component {
       }
     }
     return (
-      <div className="AddressChecker">
+      <div className="TxChecker">
         {this.state.error && (
           <Alert bsStyle="danger">
             <strong>Operation aborted</strong>
             <p style={{ wordWrap: "break-word" }}>{this.state.error}</p>
           </Alert>
         )}
-        {this.state.done && (
-          <Alert bsStyle="success">
-            <strong>XPUB</strong>
-            <p style={{ wordWrap: "break-word" }}>{this.state.xpub58}</p>
-          </Alert>
-        )}
+        {this.state.done &&
+          !this.state.result && (
+            <Alert bsStyle="warning">
+              <strong>Tx does not exist</strong>
+            </Alert>
+          )}
         <ControlLabel>Currency</ControlLabel>
         <FormControl
           componentClass="select"
@@ -119,30 +104,41 @@ class AddressChecker extends Component {
         >
           {coinSelect}
         </FormControl>
-        <ControlLabel>Path</ControlLabel>
+        <ControlLabel>Tx hash</ControlLabel>
         <FormControl
           type="text"
           value={this.state.path}
           disabled={this.state.running}
-          onChange={this.handleChangePath}
+          onChange={this.handleChangeTx}
         />
-        <Checkbox
-          onChange={this.handleChangeSegwit}
-          checked={this.state.segwit}
-          disabled={this.state.running}
-        >
-          Segwit
-        </Checkbox>
+        <br />
         <ButtonToolbar>
           <Button
             bsStyle="primary"
             bsSize="large"
-            disabled={this.state.running}
+            disabled={this.state.running || this.state.tx.length < 1}
             onClick={this.check}
           >
-            Check path
+            Check if Tx exists
           </Button>
         </ButtonToolbar>
+        <br />
+        <br />
+        {this.state.done &&
+          this.state.result && (
+            <div>
+              <Alert bsStyle="success">
+                <strong>Tx found on Ledger nodes</strong>
+              </Alert>
+              <div
+                style={{
+                  textAlign: "left"
+                }}
+              >
+                <Inspector data={this.state.result} expandLevel={2} />
+              </div>
+            </div>
+          )}
       </div>
     );
   }
