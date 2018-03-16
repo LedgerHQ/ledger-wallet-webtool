@@ -6,6 +6,7 @@ import FundsTransfer from "./FundsTransfer";
 import AddressChecker from "./AddressChecker";
 import TxChecker from "./TxChecker";
 import BalanceChecker from "./BalanceChecker";
+import MessageSigner from "./MessageSigner";
 import "./App.css";
 
 class App extends Component {
@@ -39,6 +40,9 @@ class App extends Component {
         break;
       case "balanceChecker":
         content = <BalanceChecker />;
+        break;
+      case "messageSigner":
+        content = <MessageSigner />;
         break;
       default:
         content = <Home />;
@@ -89,6 +93,13 @@ class App extends Component {
               onClick={() => this.handleNav("balanceChecker")}
             >
               Check Balances
+            </NavItem>
+            <NavItem
+              eventKey={1}
+              href="#"
+              onClick={() => this.handleNav("messageSigner")}
+            >
+              Sign Message
             </NavItem>
           </Nav>
         </Navbar>
