@@ -67,7 +67,8 @@ class AddressChecker extends Component {
     this.setState({ coin: e.target.value });
   };
 
-  check = async () => {
+  check = async e => {
+    e.preventDefault();
     this.setState({ running: true, done: false, error: false });
     try {
       var path =
@@ -97,33 +98,37 @@ class AddressChecker extends Component {
     }
     return (
       <div className="TxChecker">
-        <ControlLabel>Currency</ControlLabel>
-        <FormControl
-          componentClass="select"
-          placeholder="select"
-          onChange={this.handleChangeCoin}
-          disabled={this.state.running}
-        >
-          {coinSelect}
-        </FormControl>
-        <ControlLabel>Tx hash</ControlLabel>
-        <FormControl
-          type="text"
-          value={this.state.tx}
-          disabled={this.state.running}
-          onChange={this.handleChangeTx}
-        />
-        <br />
-        <ButtonToolbar>
-          <Button
-            bsStyle="primary"
-            bsSize="large"
-            disabled={this.state.running || this.state.tx.length < 1}
-            onClick={this.check}
-          >
-            Check if Tx exists
-          </Button>
-        </ButtonToolbar>
+        <form onSubmit={this.check}>
+          <FormGroup controlId="TxChecker">
+            <ControlLabel>Currency</ControlLabel>
+            <FormControl
+              componentClass="select"
+              placeholder="select"
+              onChange={this.handleChangeCoin}
+              disabled={this.state.running}
+            >
+              {coinSelect}
+            </FormControl>
+            <ControlLabel>Tx hash</ControlLabel>
+            <FormControl
+              type="text"
+              value={this.state.tx}
+              disabled={this.state.running}
+              onChange={this.handleChangeTx}
+            />
+            <br />
+            <ButtonToolbar>
+              <Button
+                bsStyle="primary"
+                bsSize="large"
+                disabled={this.state.running || this.state.tx.length < 1}
+                onClick={this.check}
+              >
+                Check if Tx exists
+              </Button>
+            </ButtonToolbar>
+          </FormGroup>
+        </form>
         <br />
         <br />
         {this.state.error && (

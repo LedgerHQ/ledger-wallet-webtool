@@ -89,6 +89,7 @@ class MessageSigner extends Component {
   };
 
   sign = async e => {
+    e.preventDefault();
     this.setState({
       running: true,
       done: false,

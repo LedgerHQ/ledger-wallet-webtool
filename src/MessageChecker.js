@@ -76,6 +76,7 @@ class MessageChecker extends Component {
   };
 
   verify = async e => {
+    e.preventDefault();
     this.setState({
       running: true,
       done: false,
@@ -139,25 +140,25 @@ class MessageChecker extends Component {
               </Button>
             </ButtonToolbar>
           </FormGroup>
-          {this.state.error && (
-            <Alert bsStyle="danger">
-              <strong>Operation aborted</strong>
-              <p>{this.state.error}</p>
+        </form>
+        {this.state.error && (
+          <Alert bsStyle="danger">
+            <strong>Operation aborted</strong>
+            <p>{this.state.error}</p>
+          </Alert>
+        )}
+        {this.state.done &&
+          this.state.valid && (
+            <Alert bsStyle="success">
+              <p>Signature is valid</p>
             </Alert>
           )}
-          {this.state.done &&
-            this.state.valid && (
-              <Alert bsStyle="success">
-                <p>Signature is valid</p>
-              </Alert>
-            )}
-          {this.state.done &&
-            !this.state.valid && (
-              <Alert bsStyle="danger">
-                <p>Signature is invalid</p>
-              </Alert>
-            )}
-        </form>
+        {this.state.done &&
+          !this.state.valid && (
+            <Alert bsStyle="danger">
+              <p>Signature is invalid</p>
+            </Alert>
+          )}
       </div>
     );
   }
