@@ -15,7 +15,7 @@ function parseHexString(str) {
   return result;
 }
 
-const toPrefixBuffer = network => {
+export const toPrefixBuffer = network => {
   return {
     ...network,
     messagePrefix: Buffer.concat([
