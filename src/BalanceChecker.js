@@ -23,13 +23,13 @@ import Errors from "./Errors";
 const initialState = {
   done: false,
   running: false,
-  coin: "1",
+  coin: "133",
   error: false,
-  segwit: true,
-  path: "49'/1'/0'",
+  segwit: false,
+  path: "44'/133'/0'",
   useXpub: true,
   xpub58:
-    "tpubDCcvqEHx7prGPe7K9GuCFiHRT8eod87TnQaLdkTsR6mBCBg32hUswjJZnVJwyLfBjogTnHwZh5HAZeNGAQXH9aXSWdph1K6V7PYN2VkmpA3",
+    "xpub6CoAz6o5a3XWqnLYTMD1NnkbiEnwSaSXr8mtqnfGdGtLw6383aDr3EuMUMqpmkoRwtbGtkk9ChYPxm9Bv4YftfyA8PP4quotPYtNyEWJEmZ",
   gap: 2,
   result: [],
   allTxs: {},
@@ -229,6 +229,7 @@ class BalanceChecker extends Component {
               xpub58
             );
           } catch (e) {
+            console.log(e);
             throw Errors.u2f;
           }
           try {
