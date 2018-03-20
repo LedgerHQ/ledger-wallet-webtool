@@ -15,11 +15,10 @@ import Errors from "./Errors";
 const initialState = {
   done: false,
   running: false,
-  coin: "1",
+  coin: "0",
   error: false,
   message: "",
   hash: Buffer.from(""),
-  coin: 0,
   segwit: false,
   v: undefined,
   s: undefined,
