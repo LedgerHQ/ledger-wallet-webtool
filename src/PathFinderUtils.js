@@ -1,10 +1,13 @@
 import Transport from "@ledgerhq/hw-transport-u2f";
 import AppBtc from "@ledgerhq/hw-app-btc";
 import Networks from "./Networks";
-import bitcoin from "bitcoinjs-lib";
+import bitcoinjs from "bitcoinjs-lib";
+import zcash from "bitcoinjs-lib-zcash";
 import bs58 from "bs58";
 import padStart from "lodash/padStart";
 import Errors from "./Errors";
+
+let bitcoin = bitcoinjs;
 
 function parseHexString(str) {
   var result = [];
@@ -15,7 +18,7 @@ function parseHexString(str) {
   return result;
 }
 
-const toPrefixBuffer = network => {
+export const toPrefixBuffer = network => {
   return {
     ...network,
     messagePrefix: Buffer.concat([
@@ -158,6 +161,11 @@ export var findPath = async (params, onUpdate, onDone, onError) => {
 };
 
 export var findAddress = async (path, segwit, coin, xpub58) => {
+  if (parseInt(coin, 10) === 133) {
+    bitcoin = zcash;
+  } else {
+    bitcoin = bitcoinjs;
+  }
   if (!xpub58) {
     xpub58 = await initialize(
       coin,

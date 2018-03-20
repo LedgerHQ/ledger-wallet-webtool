@@ -27,14 +27,28 @@ import AppBtc from "@ledgerhq/hw-app-btc";
 class AddressChecker extends Component {
   constructor(props) {
     super();
-    this.state = {
-      error: false,
-      done: false,
-      running: false,
-      tx: "",
-      coin: "0",
-      result: ""
-    };
+    if (localStorage.getItem("LedgerTxChecker")) {
+      this.state = JSON.parse(localStorage.getItem("LedgerTxChecker"));
+    } else {
+      this.state = {
+        error: false,
+        done: false,
+        running: false,
+        tx: "",
+        coin: "0",
+        result: ""
+      };
+    }
+  }
+
+  componentWillUnmount() {
+    var state = {};
+    if (this.state.running || this.state.paused) {
+      Object.assign(state, this.state, { running: false });
+    } else {
+      Object.assign(state, this.state);
+    }
+    localStorage.setItem("LedgerTxChecker", JSON.stringify(state));
   }
 
   onError = e => {
@@ -53,7 +67,8 @@ class AddressChecker extends Component {
     this.setState({ coin: e.target.value });
   };
 
-  check = async () => {
+  check = async e => {
+    e.preventDefault();
     this.setState({ running: true, done: false, error: false });
     try {
       var path =
@@ -83,6 +98,39 @@ class AddressChecker extends Component {
     }
     return (
       <div className="TxChecker">
+        <form onSubmit={this.check}>
+          <FormGroup controlId="TxChecker">
+            <ControlLabel>Currency</ControlLabel>
+            <FormControl
+              componentClass="select"
+              placeholder="select"
+              onChange={this.handleChangeCoin}
+              disabled={this.state.running}
+            >
+              {coinSelect}
+            </FormControl>
+            <ControlLabel>Tx hash</ControlLabel>
+            <FormControl
+              type="text"
+              value={this.state.tx}
+              disabled={this.state.running}
+              onChange={this.handleChangeTx}
+            />
+            <br />
+            <ButtonToolbar>
+              <Button
+                bsStyle="primary"
+                bsSize="large"
+                disabled={this.state.running || this.state.tx.length < 1}
+                onClick={this.check}
+              >
+                Check if Tx exists
+              </Button>
+            </ButtonToolbar>
+          </FormGroup>
+        </form>
+        <br />
+        <br />
         {this.state.error && (
           <Alert bsStyle="danger">
             <strong>Operation aborted</strong>
@@ -95,35 +143,6 @@ class AddressChecker extends Component {
               <strong>Tx does not exist</strong>
             </Alert>
           )}
-        <ControlLabel>Currency</ControlLabel>
-        <FormControl
-          componentClass="select"
-          placeholder="select"
-          onChange={this.handleChangeCoin}
-          disabled={this.state.running}
-        >
-          {coinSelect}
-        </FormControl>
-        <ControlLabel>Tx hash</ControlLabel>
-        <FormControl
-          type="text"
-          value={this.state.path}
-          disabled={this.state.running}
-          onChange={this.handleChangeTx}
-        />
-        <br />
-        <ButtonToolbar>
-          <Button
-            bsStyle="primary"
-            bsSize="large"
-            disabled={this.state.running || this.state.tx.length < 1}
-            onClick={this.check}
-          >
-            Check if Tx exists
-          </Button>
-        </ButtonToolbar>
-        <br />
-        <br />
         {this.state.done &&
           this.state.result && (
             <div>

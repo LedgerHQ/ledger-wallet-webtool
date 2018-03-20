@@ -20,37 +20,51 @@ import Networks from "./Networks";
 import { findAddress, initialize } from "./PathFinderUtils";
 import { estimateTransactionSize } from "./TransactionUtils";
 import Errors from "./Errors";
-var util = require("util");
-
+const initialState = {
+  done: false,
+  running: false,
+  coin: "133",
+  error: false,
+  segwit: false,
+  path: "44'/133'/0'",
+  useXpub: true,
+  xpub58:
+    "xpub6CoAz6o5a3XWqnLYTMD1NnkbiEnwSaSXr8mtqnfGdGtLw6383aDr3EuMUMqpmkoRwtbGtkk9ChYPxm9Bv4YftfyA8PP4quotPYtNyEWJEmZ",
+  gap: 2,
+  result: [],
+  allTxs: {},
+  paused: false,
+  lastIndex: [0, 0],
+  totalBalance: 0
+};
 class BalanceChecker extends Component {
   constructor(props) {
     super();
-    this.state = {
-      done: false,
-      running: false,
-      coin: "1",
-      error: false,
-      segwit: true,
-      path: "49'/1'/0'",
-      useXpub: false,
-      xpub58: "",
-      gap: 2,
-      result: [],
-      allTxs: false
-    };
+    if (localStorage.getItem("LedgerBalanceChecker")) {
+      this.state = JSON.parse(localStorage.getItem("LedgerBalanceChecker"));
+    } else {
+      this.state = initialState;
+    }
+  }
+
+  componentWillUnmount() {
+    var state = {};
+    this.interrupt();
+    if (this.state.running) {
+      Object.assign(state, this.state, {
+        running: false,
+        paused: true
+      });
+    } else {
+      Object.assign(state, this.state);
+    }
+    localStorage.setItem("LedgerBalanceChecker", JSON.stringify(state));
   }
 
   reset = () => {
     // change states.
-    localStorage.removeItem("LedgerFundsTransfer");
-    this.setState({
-      prepared: false,
-      running: false,
-      done: false,
-      empty: false,
-      txs: false,
-      error: false
-    });
+    localStorage.removeItem("LedgerBalanceChecker");
+    this.setState(initialState);
   };
 
   onError = e => {
@@ -93,12 +107,12 @@ class BalanceChecker extends Component {
     this.setState({ coin: e.target.value, done: false, result: [] });
   };
 
-  onUpdate = e => {
-    this.setState({ result: this.state.result.concat(e) });
+  onUpdate = (e, i, j) => {
+    this.setState({ result: this.state.result.concat(e), lastIndex: [i, j] });
   };
 
-  stop = () => {
-    this.setState({ running: false });
+  interrupt = () => {
+    this.stop = true;
   };
 
   addressesOptions = {
@@ -123,23 +137,23 @@ class BalanceChecker extends Component {
   };
 
   recover = async e => {
+    let [i, j] = this.state.lastIndex;
+    this.stop = false;
     e.preventDefault();
-    let total = 0;
-    let allTxs = {};
+    let total = this.state.totalBalance;
+    let allTxs = this.state.allTxs;
     this.setState({
       running: true,
-      prepared: false,
+      paused: false,
       done: false,
-      empty: false,
       error: false,
-      result: [],
-      allTxs: {},
-      selectedTxs: false
+      selectedTxs: false,
+      selectedTx: false
     });
     try {
       var emptyStreak = 0;
       let xpub58 = this.state.useXpub
-        ? await this.state.xpub58
+        ? this.state.xpub58
         : await initialize(
             this.state.coin,
             this.state.path.split("/")[0],
@@ -153,7 +167,7 @@ class BalanceChecker extends Component {
         const data = await res.json();
         txs = txs.concat(data.txs);
         if (!data.truncated) {
-          if (data.txs.length < 1) {
+          if (data.txs.length < 1 && j === 0) {
             emptyStreak++;
             return 0;
           } else {
@@ -197,12 +211,12 @@ class BalanceChecker extends Component {
         }
         return balance;
       };
-      for (let i = 0; emptyStreak < this.state.gap; i++) {
+      for (i; emptyStreak < this.state.gap; i++) {
         if (this.state.error) {
           break;
         }
-        for (let j = 0; j < 2; j++) {
-          if (!this.state.running) {
+        for (j; j < 2; j++) {
+          if (this.stop) {
             throw "stopped";
           }
           let localPath = [this.state.path, j, i].join("/");
@@ -215,6 +229,7 @@ class BalanceChecker extends Component {
               xpub58
             );
           } catch (e) {
+            console.log(e);
             throw Errors.u2f;
           }
           try {
@@ -226,28 +241,33 @@ class BalanceChecker extends Component {
               "/transactions?noToken=true";
             let balance = await iterate([], address, 0);
             total += balance;
-            this.onUpdate({
-              path: localPath,
-              address,
-              balance:
-                (balance / 10 ** Networks[this.state.coin].satoshi).toString() +
-                " " +
-                Networks[this.state.coin].unit
-            });
+            this.onUpdate(
+              {
+                path: localPath,
+                address,
+                balance:
+                  (
+                    balance /
+                    10 ** Networks[this.state.coin].satoshi
+                  ).toString() +
+                  " " +
+                  Networks[this.state.coin].unit
+              },
+              i,
+              j
+            );
           } catch (e) {
             throw Errors.networkError;
           }
         }
+        j = 0;
       }
       this.setState({
         running: false,
         done: true,
         allTxs,
         selectedTxs: false,
-        totalBalance:
-          (total / 10 ** Networks[this.state.coin].satoshi).toString() +
-          " " +
-          Networks[this.state.coin].unit
+        totalBalance: total
       });
     } catch (e) {
       if (!(e === "stopped")) {
@@ -255,13 +275,10 @@ class BalanceChecker extends Component {
       } else {
         this.setState({
           running: false,
-          done: true,
+          paused: true,
           allTxs,
           selectedTxs: false,
-          totalBalance:
-            (total / 10 ** Networks[this.state.coin].satoshi).toString() +
-            " " +
-            Networks[this.state.coin].unit
+          totalBalance: total
         });
       }
     }
@@ -309,7 +326,7 @@ class BalanceChecker extends Component {
                   type="text"
                   value={this.state.xpub58}
                   onChange={this.handleChangeXpub}
-                  disabled={this.state.running || this.state.prepared}
+                  disabled={this.state.running || this.state.paused}
                 />
               </div>
             )}
@@ -318,14 +335,14 @@ class BalanceChecker extends Component {
               componentClass="select"
               placeholder="select"
               onChange={this.handleChangeCoin}
-              disabled={this.state.running || this.state.prepared}
+              disabled={this.state.running || this.state.paused}
             >
               {coinSelect}
             </FormControl>
             <Checkbox
               onChange={this.handleChangeSegwit}
               checked={this.state.segwit}
-              disabled={this.state.running || this.state.prepared}
+              disabled={this.state.running || this.state.paused}
             >
               Segwit
             </Checkbox>
@@ -335,7 +352,7 @@ class BalanceChecker extends Component {
               value={this.state.path}
               placeholder="44'/0'/0'"
               onChange={this.handleChangePath}
-              disabled={this.state.running || this.state.prepared}
+              disabled={this.state.running || this.state.paused}
             />
             <FormControl.Feedback />
             <ControlLabel>Gap</ControlLabel>
@@ -343,20 +360,34 @@ class BalanceChecker extends Component {
               type="number"
               value={this.state.gap}
               onChange={this.handleChangeGap}
-              disabled={this.state.running || this.state.prepared}
+              disabled={this.state.running || this.state.paused}
             />
             <br />
             <ButtonToolbar style={{ marginTop: "10px" }}>
-              {!this.state.running && (
-                <Button bsSize="large" onClick={this.recover}>
-                  Recover account's balances
-                </Button>
-              )}
+              {!this.state.running &&
+                !this.state.paused && (
+                  <Button bsSize="large" onClick={this.recover}>
+                    Recover account's balances
+                  </Button>
+                )}
               {this.state.running && (
-                <Button bsSize="large" onClick={this.stop}>
-                  Stop
+                <Button bsSize="large" onClick={this.interrupt}>
+                  Pause
                 </Button>
               )}
+              {!this.state.running &&
+                this.state.paused && (
+                  <Button bsSize="large" onClick={this.recover}>
+                    Continue
+                  </Button>
+                )}
+              <Button
+                bsSize="large"
+                onClick={this.reset}
+                disabled={this.state.running}
+              >
+                Reset
+              </Button>
             </ButtonToolbar>
           </FormGroup>
           {this.state.error && (
@@ -368,10 +399,30 @@ class BalanceChecker extends Component {
           {this.state.done && (
             <Alert bsStyle="success">
               <strong>Synchronization finished</strong>
+              <p>
+                Total on this account:{" "}
+                {(
+                  this.state.totalBalance /
+                  10 ** Networks[this.state.coin].satoshi
+                ).toString() +
+                  " " +
+                  Networks[this.state.coin].unit}
+              </p>
             </Alert>
           )}
-          {this.state.done && (
-            <h2>Total on this account: {this.state.totalBalance}</h2>
+          {this.state.paused && (
+            <Alert>
+              <strong>Synchronization paused</strong>
+              <p>
+                Temporary total on this account:{" "}
+                {(
+                  this.state.totalBalance /
+                  10 ** Networks[this.state.coin].satoshi
+                ).toString() +
+                  " " +
+                  Networks[this.state.coin].unit}
+              </p>
+            </Alert>
           )}
         </form>
         <BootstrapTable
@@ -391,45 +442,51 @@ class BalanceChecker extends Component {
             Balance
           </TableHeaderColumn>
         </BootstrapTable>
-        {this.state.done &&
-          this.state.selectedTxs && (
-            <BootstrapTable
-              data={this.state.selectedTxs}
-              striped={true}
-              hover={true}
-              pagination
-              options={this.txsOptions}
-            >
-              <TableHeaderColumn dataField="hash" dataSort={true} isKey={true}>
-                Hash
-              </TableHeaderColumn>
-              <TableHeaderColumn dataField="balance" dataSort={true}>
-                Balance change
-              </TableHeaderColumn>
-              <TableHeaderColumn dataField="time" dataSort={true}>
-                Time
-              </TableHeaderColumn>
-            </BootstrapTable>
-          )}
-        {this.state.selectedTx &&
-          this.state.done && (
-            <div
-              style={{
-                textAlign: "left"
-              }}
-            >
-              <Inspector
-                data={this.state.selectedTx}
-                expandLevel={2}
+        {(this.state.done || this.state.paused) && (
+          <div>
+            {this.state.selectedTxs && (
+              <BootstrapTable
+                data={this.state.selectedTxs}
+                striped={true}
+                hover={true}
+                pagination
+                options={this.txsOptions}
+              >
+                <TableHeaderColumn
+                  dataField="hash"
+                  dataSort={true}
+                  isKey={true}
+                >
+                  Hash
+                </TableHeaderColumn>
+                <TableHeaderColumn dataField="balance" dataSort={true}>
+                  Balance change
+                </TableHeaderColumn>
+                <TableHeaderColumn dataField="time" dataSort={true}>
+                  Time
+                </TableHeaderColumn>
+              </BootstrapTable>
+            )}
+            {this.state.selectedTx && (
+              <div
                 style={{
-                  fontSize: "20px"
+                  textAlign: "left"
                 }}
-              />
-              <br />
-              <br />
-              <br />
-            </div>
-          )}
+              >
+                <Inspector
+                  data={this.state.selectedTx}
+                  expandLevel={2}
+                  style={{
+                    fontSize: "20px"
+                  }}
+                />
+                <br />
+                <br />
+                <br />
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   }
