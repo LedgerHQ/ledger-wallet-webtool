@@ -23,14 +23,13 @@ import Errors from "./Errors";
 const initialState = {
   done: false,
   running: false,
-  coin: "133",
+  coin: "0",
   error: false,
   segwit: false,
-  path: "44'/133'/0'",
-  useXpub: true,
-  xpub58:
-    "xpub6CoAz6o5a3XWqnLYTMD1NnkbiEnwSaSXr8mtqnfGdGtLw6383aDr3EuMUMqpmkoRwtbGtkk9ChYPxm9Bv4YftfyA8PP4quotPYtNyEWJEmZ",
-  gap: 2,
+  path: "44'/0'/0'",
+  useXpub: false,
+  xpub58: "",
+  gap: 20,
   result: [],
   allTxs: {},
   paused: false,
@@ -64,7 +63,16 @@ class BalanceChecker extends Component {
   reset = () => {
     // change states.
     localStorage.removeItem("LedgerBalanceChecker");
-    this.setState(initialState);
+    this.setState({
+      result: [],
+      allTxs: {},
+      paused: false,
+      lastIndex: [0, 0],
+      totalBalance: 0,
+      done: false,
+      running: false,
+      error: false
+    });
   };
 
   onError = e => {
@@ -76,6 +84,7 @@ class BalanceChecker extends Component {
   };
 
   handleChangePath = e => {
+    this.reset();
     this.setState({
       path: e.target.value.replace(/\s/g, ""),
       done: false,
@@ -84,27 +93,30 @@ class BalanceChecker extends Component {
   };
 
   handleChangeGap = e => {
-    this.setState({ gap: e.target.value, done: false, result: [] });
+    this.reset();
+    this.setState({ gap: e.target.value });
   };
 
   handleChangeSegwit = e => {
-    this.setState({ segwit: !this.state.segwit, done: false, result: [] });
+    this.reset();
+    this.setState({ segwit: !this.state.segwit });
   };
 
   handleChangeUseXpub = e => {
-    this.setState({ useXpub: e, done: false, result: [] });
+    this.reset();
+    this.setState({ useXpub: e });
   };
 
   handleChangeXpub = e => {
+    this.reset();
     this.setState({
-      xpub58: e.target.value.replace(/\s/g, ""),
-      done: false,
-      result: []
+      xpub58: e.target.value.replace(/\s/g, "")
     });
   };
 
   handleChangeCoin = e => {
-    this.setState({ coin: e.target.value, done: false, result: [] });
+    this.reset();
+    this.setState({ coin: e.target.value });
   };
 
   onUpdate = (e, i, j) => {
@@ -118,12 +130,21 @@ class BalanceChecker extends Component {
   addressesOptions = {
     onRowClick: row => {
       if (!this.state.running) {
-        this.setState({
-          selectedTxs: Object.keys(this.state.allTxs[row.address]).map(
-            tx => this.state.allTxs[row.address][tx].display
-          ),
-          selectedTx: false
-        });
+        if (this.state.allTxs[row.address]) {
+          this.setState({
+            selectedTxs: Object.keys(this.state.allTxs[row.address]).map(
+              tx => this.state.allTxs[row.address][tx].display
+            ),
+            selectedAddress: row.address,
+            selectedTx: false
+          });
+        } else {
+          this.setState({
+            selectedTxs: false,
+            selectedAddress: false,
+            selectedTx: false
+          });
+        }
       }
     }
   };
@@ -169,6 +190,7 @@ class BalanceChecker extends Component {
         if (!data.truncated) {
           if (data.txs.length < 1 && j === 0) {
             emptyStreak++;
+            allTxs[address] = {};
             return 0;
           } else {
             allTxs[address] = {};
@@ -365,7 +387,8 @@ class BalanceChecker extends Component {
             <br />
             <ButtonToolbar style={{ marginTop: "10px" }}>
               {!this.state.running &&
-                !this.state.paused && (
+                !this.state.paused &&
+                !this.state.done && (
                   <Button bsSize="large" onClick={this.recover}>
                     Recover account's balances
                   </Button>
@@ -425,6 +448,7 @@ class BalanceChecker extends Component {
             </Alert>
           )}
         </form>
+        <h2> Balances by address </h2>
         <BootstrapTable
           data={this.state.result}
           striped={true}
@@ -445,27 +469,30 @@ class BalanceChecker extends Component {
         {(this.state.done || this.state.paused) && (
           <div>
             {this.state.selectedTxs && (
-              <BootstrapTable
-                data={this.state.selectedTxs}
-                striped={true}
-                hover={true}
-                pagination
-                options={this.txsOptions}
-              >
-                <TableHeaderColumn
-                  dataField="hash"
-                  dataSort={true}
-                  isKey={true}
+              <div>
+                <h3> Txs for {this.state.selectedAddress} </h3>
+                <BootstrapTable
+                  data={this.state.selectedTxs}
+                  striped={true}
+                  hover={true}
+                  pagination
+                  options={this.txsOptions}
                 >
-                  Hash
-                </TableHeaderColumn>
-                <TableHeaderColumn dataField="balance" dataSort={true}>
-                  Balance change
-                </TableHeaderColumn>
-                <TableHeaderColumn dataField="time" dataSort={true}>
-                  Time
-                </TableHeaderColumn>
-              </BootstrapTable>
+                  <TableHeaderColumn
+                    dataField="hash"
+                    dataSort={true}
+                    isKey={true}
+                  >
+                    Hash
+                  </TableHeaderColumn>
+                  <TableHeaderColumn dataField="balance" dataSort={true}>
+                    Balance change
+                  </TableHeaderColumn>
+                  <TableHeaderColumn dataField="time" dataSort={true}>
+                    Time
+                  </TableHeaderColumn>
+                </BootstrapTable>
+              </div>
             )}
             {this.state.selectedTx && (
               <div
@@ -473,6 +500,7 @@ class BalanceChecker extends Component {
                   textAlign: "left"
                 }}
               >
+                <h4>Tx details: </h4>
                 <Inspector
                   data={this.state.selectedTx}
                   expandLevel={2}

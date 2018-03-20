@@ -1,54 +1,30 @@
 import React, { Component } from "react";
-import util from "util";
 import Inspector from "react-inspector";
 
 import {
   Button,
-  Checkbox,
   form,
   FormControl,
   FormGroup,
   ControlLabel,
   ButtonToolbar,
-  Alert,
-  DropdownButton,
-  MenuItem
+  Alert
 } from "react-bootstrap";
 import Networks from "./Networks";
-import { initialize } from "./PathFinderUtils";
-import {
-  estimateTransactionSize,
-  createPaymentTransaction
-} from "./TransactionUtils";
 import Errors from "./Errors";
-import Transport from "@ledgerhq/hw-transport-u2f";
-import AppBtc from "@ledgerhq/hw-app-btc";
 
 class AddressChecker extends Component {
   constructor(props) {
     super();
-    if (localStorage.getItem("LedgerTxChecker")) {
-      this.state = JSON.parse(localStorage.getItem("LedgerTxChecker"));
-    } else {
-      this.state = {
-        error: false,
-        done: false,
-        running: false,
-        tx: "",
-        coin: "0",
-        result: ""
-      };
-    }
-  }
 
-  componentWillUnmount() {
-    var state = {};
-    if (this.state.running || this.state.paused) {
-      Object.assign(state, this.state, { running: false });
-    } else {
-      Object.assign(state, this.state);
-    }
-    localStorage.setItem("LedgerTxChecker", JSON.stringify(state));
+    this.state = {
+      error: false,
+      done: false,
+      running: false,
+      tx: "",
+      coin: "0",
+      result: ""
+    };
   }
 
   onError = e => {
