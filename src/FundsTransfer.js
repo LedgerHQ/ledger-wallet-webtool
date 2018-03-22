@@ -58,7 +58,6 @@ class FundsTransfer extends Component {
 
   reset = () => {
     // change states.
-    localStorage.removeItem("LedgerFundsTransfer");
     this.setState({
       prepared: false,
       running: false,
