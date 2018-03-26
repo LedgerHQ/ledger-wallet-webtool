@@ -119,6 +119,7 @@ class PathFinder extends Component {
   };
 
   start = async () => {
+    this.canPause = false;
     this.setState({ running: true, paused: false, error: false });
     try {
       this.terminate = await findPath(
@@ -137,17 +138,20 @@ class PathFinder extends Component {
         this.onDone,
         this.onError
       );
+      this.canPause = true;
     } catch (e) {
       this.onError(e);
     }
   };
 
   stop = () => {
-    this.terminate && this.terminate();
     this.setState({
       running: false,
       paused: true
     });
+    while (!this.canPause) {}
+    this.terminate();
+    this.canPause = false;
   };
 
   save = () => {
