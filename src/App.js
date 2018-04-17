@@ -8,7 +8,7 @@ import TxChecker from "./TxChecker";
 import BalanceChecker from "./BalanceChecker";
 import MessageSigner from "./MessageSigner";
 import MessageChecker from "./MessageChecker";
-
+import RippleRecoverer from "./RippleRecoverer";
 import "./App.css";
 
 class App extends Component {
@@ -48,6 +48,9 @@ class App extends Component {
         break;
       case "messageChecker":
         content = <MessageChecker />;
+        break;
+      case "rippleRecoverer":
+        content = <RippleRecoverer />;
         break;
       default:
         content = <Home />;
@@ -112,6 +115,13 @@ class App extends Component {
               onClick={() => this.handleNav("messageChecker")}
             >
               Check Message
+            </NavItem>
+            <NavItem
+              eventKey={1}
+              href="#"
+              onClick={() => this.handleNav("rippleRecoverer")}
+            >
+              Recover XRP
             </NavItem>
           </Nav>
         </Navbar>

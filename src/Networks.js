@@ -4,7 +4,6 @@ const networks = {
     unit: "BTC",
     name: "bitcoin",
     satoshi: 8,
-    xpub: 0x0488b21e,
     bitcoinjs: {
       bech32: "bc",
       bip32: {
@@ -24,7 +23,6 @@ const networks = {
     unit: "BTC",
     name: "btc testnet",
     satoshi: 8,
-    xpub: 0x043587cf,
     bitcoinjs: {
       bech32: "bc",
       bip32: {
@@ -38,6 +36,25 @@ const networks = {
     },
     isSegwitSupported: true,
     handleFeePerByte: true
+  },
+  2: {
+    name: "litecoin",
+    unit: "LTC",
+    apiName: "ltc",
+    isSegwitSupported: true,
+    satoshi: 8,
+    bitcoinjs: {
+      bech32: "bc",
+      bip32: {
+        private: 0x019d9cfe,
+        public: 0x019da462
+      },
+      messagePrefix: "Litecoin Signed Message:",
+      pubKeyHash: 48,
+      scriptHash: 5,
+      wif: 0xb0
+    },
+    handleFeePerByte: false
   },
   145: {
     name: "bitcoin cash",
@@ -56,7 +73,6 @@ const networks = {
       wif: 128
     },
     sigHash: 0x41,
-    xpub: 0x0488b21e,
     isSegwitSupported: true,
     handleFeePerByte: true
   },
@@ -65,7 +81,6 @@ const networks = {
     unit: "VTC",
     satoshi: 8,
     name: "Vertcoin",
-    xpub: 0x0488b21e,
     bitcoinjs: {
       bip32: {
         public: 0x0488b21e,
@@ -79,12 +94,10 @@ const networks = {
     isSegwitSupported: true,
     handleFeePerByte: false
   },
-
   5: {
     name: "dash",
     satoshi: 8,
     unit: "DASH",
-    xpub: 50221816,
     apiName: "dash",
     bitcoinjs: {
       messagePrefix: "DarkCoin Signed Message:",
@@ -101,7 +114,6 @@ const networks = {
     name: "peercoin",
     satoshi: 6,
     unit: "PPC",
-    xpub: 3874023909,
     apiName: "ppc",
     bitcoinjs: {
       messagePrefix: "PPCoin Signed Message:",
@@ -118,7 +130,6 @@ const networks = {
     name: "viacoin",
     satoshi: 8,
     unit: "VIA",
-    xpub: 76067358,
     apiName: "via",
     bitcoinjs: {
       messagePrefix: "Viacoin Signed Message:",
@@ -135,7 +146,6 @@ const networks = {
     name: "digibyte",
     satoshi: 8,
     unit: "DGB",
-    xpub: 76067358,
     apiName: "dgb",
     bitcoinjs: {
       messagePrefix: "DigiByte Signed Message:",
@@ -152,7 +162,6 @@ const networks = {
     name: "poswallet",
     satoshi: 8,
     unit: "POSW",
-    xpub: 76067358,
     apiName: "posw",
     bitcoinjs: {
       messagePrefix: "PoSWallet Signed Message:",
@@ -169,7 +178,6 @@ const networks = {
     name: "pivx",
     satoshi: 8,
     unit: "PIV",
-    xpub: 36513075,
     apiName: "pivx",
     bitcoinjs: {
       messagePrefix: "DarkNet Signed Message:",
@@ -186,7 +194,6 @@ const networks = {
     name: "clubcoin",
     satoshi: 8,
     unit: "CLUB",
-    xpub: 76067358,
     apiName: "club",
     bitcoinjs: {
       messagePrefix: "ClubCoin Signed Message:",
@@ -203,7 +210,6 @@ const networks = {
     name: "qtum",
     satoshi: 8,
     unit: "QTUM",
-    xpub: 76067358,
     apiName: "qtum",
     bitcoinjs: {
       messagePrefix: "Qtum Signed Message:",
@@ -220,7 +226,6 @@ const networks = {
     name: "stratis",
     satoshi: 8,
     unit: "STRAT",
-    xpub: 76071454,
     apiName: "strat",
     bitcoinjs: {
       messagePrefix: "Stratis Signed Message:",
@@ -237,7 +242,6 @@ const networks = {
     name: "stealthcoin",
     satoshi: 6,
     unit: "XST",
-    xpub: 2405583718,
     apiName: "xst",
     bitcoinjs: {
       messagePrefix: "StealthCoin Signed Message:",
@@ -254,7 +258,6 @@ const networks = {
     name: "zcash",
     satoshi: 8,
     unit: "ZEC",
-    xpub: 76067358,
     apiName: "zec",
     bitcoinjs: {
       messagePrefix: "Zcash Signed Message:",
@@ -271,7 +274,6 @@ const networks = {
     name: "komodo",
     satoshi: 8,
     unit: "KMD",
-    xpub: 4193182861,
     apiName: "kmd",
     bitcoinjs: {
       messagePrefix: "Komodo Signed Message:",
@@ -288,7 +290,6 @@ const networks = {
     name: "bitcoin gold",
     satoshi: 8,
     unit: "BTG",
-    xpub: 76067358,
     apiName: "btg",
     bitcoinjs: {
       messagePrefix: "Bitcoin gold Signed Message:",
@@ -306,7 +307,6 @@ const networks = {
     name: "hcash",
     satoshi: 8,
     unit: "HSR",
-    xpub: 76071454,
     apiName: "hsr",
     bitcoinjs: {
       messagePrefix: "HShare Signed Message:",

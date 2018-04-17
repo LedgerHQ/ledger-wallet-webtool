@@ -103,7 +103,7 @@ export var initialize = async (network, purpose, coin, account, segwit) => {
       childnum,
       nodeData.chainCode,
       publicKey,
-      Networks[network].xpub
+      Networks[network].bitcoinjs.bip32.public
     );
     return encodeBase58Check(xpub);
   };

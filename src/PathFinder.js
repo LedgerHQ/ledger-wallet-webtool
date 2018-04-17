@@ -80,7 +80,7 @@ class PathFinder extends Component {
   };
 
   handleChangeCoin = e => {
-    this.setState({ coin: e.target.value });
+    this.setState({ coin: e.target.value, coinPath: e.target.value });
   };
 
   handleChangeSegwit = e => {
@@ -119,6 +119,7 @@ class PathFinder extends Component {
   };
 
   start = async () => {
+    this.canPause = false;
     this.setState({ running: true, paused: false, error: false });
     try {
       this.terminate = await findPath(
@@ -137,17 +138,20 @@ class PathFinder extends Component {
         this.onDone,
         this.onError
       );
+      this.canPause = true;
     } catch (e) {
       this.onError(e);
     }
   };
 
   stop = () => {
-    this.terminate && this.terminate();
     this.setState({
       running: false,
       paused: true
     });
+    while (!this.canPause) {}
+    this.terminate();
+    this.canPause = false;
   };
 
   save = () => {
@@ -178,12 +182,16 @@ class PathFinder extends Component {
       launchButton = undefined;
     }
 
-    let derivations = ["Derive from device", "Derive from XPUB"];
+    let derivations = ["Derive XPUB from device", "Enter XPUB manually"];
 
     return (
       <div className="Finder">
         <form>
           <FormGroup controlId="pathSearch">
+            <ControlLabel>
+              XPUB of the account that received the funds
+            </ControlLabel>
+            <br />
             <DropdownButton
               title={this.state.useXpub ? derivations[1] : derivations[0]}
               disabled={this.state.running || this.state.paused}
@@ -203,7 +211,6 @@ class PathFinder extends Component {
             <br />
             {this.state.useXpub && (
               <div>
-                <ControlLabel>XPUB</ControlLabel>
                 <FormControl
                   type="text"
                   value={this.state.xpub58}
@@ -212,7 +219,10 @@ class PathFinder extends Component {
                 />
               </div>
             )}
-            <ControlLabel>Currency</ControlLabel>
+            <ControlLabel>
+              {" "}
+              Currency of the address the funds were sent to
+            </ControlLabel>
             <FormControl
               componentClass="select"
               placeholder="select"
@@ -221,7 +231,7 @@ class PathFinder extends Component {
             >
               {coinSelect}
             </FormControl>
-            <ControlLabel>Coin Path</ControlLabel>
+            <ControlLabel>Coin Path (let the default value)</ControlLabel>
             <FormControl
               type="text"
               value={this.state.coinPath}
@@ -229,7 +239,7 @@ class PathFinder extends Component {
               onChange={this.handleChangeCoinPath}
               disabled={this.state.running || this.state.paused}
             />
-            <ControlLabel>Address</ControlLabel>
+            <ControlLabel>Address the funds were sent to</ControlLabel>
             <FormControl
               type="text"
               value={this.state.address}
@@ -237,7 +247,9 @@ class PathFinder extends Component {
               onChange={this.handleChangeAddress}
               disabled={this.state.running || this.state.paused}
             />
-            <ControlLabel>Account number</ControlLabel>
+            <ControlLabel>
+              Account number of the address the funds were sent to
+            </ControlLabel>
             <FormControl
               type="text"
               value={this.state.account}
