@@ -151,8 +151,8 @@ class RippleRecoverer extends Component {
         }
       );
       var signed = this.api.sign(prepared.txJSON, {
-        privateKey: this.state.privateKey,
-        publicKey: publicKey
+        privateKey: this.state.privateKey.toUpperCase(),
+        publicKey: publicKey.toUpperCase()
       });
       const val = await this.api.submit(signed.signedTransaction);
       this.setState({ done: val, running: false });
