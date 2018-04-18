@@ -318,6 +318,23 @@ const networks = {
     isSegwitSupported: false,
     handleFeePerByte: false,
     areTransactionTimestamped: true
+  },
+  444: {
+    name: "phore",
+    satoshi: 8,
+    unit: "PHR",
+    xpub: 36513075,
+    apiName: "phore",
+    bitcoinjs: {
+      messagePrefix: "DarkNet Signed Message:",
+      bip32: { public: 022D2533, private: 05358394 },
+      pubKeyHash: 30,
+      scriptHash: 13,
+      wif: 128
+    },
+    isSegwitSupported: false,
+    handleFeePerByte: false,
+    areTransactionTimestamped: false
   }
 };
 
