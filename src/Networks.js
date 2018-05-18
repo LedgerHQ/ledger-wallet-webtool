@@ -182,8 +182,8 @@ const networks = {
       bitcoinjs: {
           messagePrefix: "Syscoin Signed Message:",
           bip32: {
-              public: 0x0488B21E,
-              private: 0x0488ADE4
+              private: 76066276,
+              public: 76067358
           },
           pubKeyHash: 63,
           scriptHash: 5,
