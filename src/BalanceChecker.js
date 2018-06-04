@@ -116,7 +116,10 @@ class BalanceChecker extends Component {
 
   handleChangeCoin = e => {
     this.reset();
-    this.setState({ coin: e.target.value });
+    this.setState({ 
+      coin: e.target.value,
+      path: `44'/${e.target.value}'/0'`
+    });
   };
 
   onUpdate = (e, i, j) => {
@@ -321,6 +324,7 @@ class BalanceChecker extends Component {
     }
 
     return (
+      
       <div className="BalanceChecker">
         <form onSubmit={this.recover}>
           <FormGroup controlId="BalanceChecker">
