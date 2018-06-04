@@ -99,7 +99,10 @@ class BalanceChecker extends Component {
 
   handleChangeSegwit = e => {
     this.reset();
-    this.setState({ segwit: !this.state.segwit });
+    this.setState({ 
+      segwit: !this.state.segwit,
+      path: `${(this.state.segwit? 44 : 49)}'/${this.state.coin}'/0'`  
+    });
   };
 
   handleChangeUseXpub = e => {
@@ -118,7 +121,7 @@ class BalanceChecker extends Component {
     this.reset();
     this.setState({ 
       coin: e.target.value,
-      path: `44'/${e.target.value}'/0'`
+      path: `${(this.state.segwit? 49 : 44)}'/${e.target.value}'/0'`
     });
   };
 

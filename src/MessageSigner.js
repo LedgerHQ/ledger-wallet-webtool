@@ -85,7 +85,11 @@ class MessageSigner extends Component {
   };
 
   handleChangeCoin = e => {
-    this.setState({ coin: e.target.value, done: false, error: false });
+    this.setState({ 
+      coin: e.target.value, 
+      path: `${(this.state.segwit? 44 : 49)}'/${e.target.value}'/0'/0/0`,
+      done: false, 
+      error: false });
   };
 
   sign = async e => {

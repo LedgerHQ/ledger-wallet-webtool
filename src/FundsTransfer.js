@@ -83,7 +83,10 @@ class FundsTransfer extends Component {
   };
 
   handleChangeSegwit = e => {
-    this.setState({ segwit: !this.state.segwit });
+    this.setState({ 
+      segwit: !this.state.segwit,
+      path: `${(this.state.segwit? 44 : 49)}'/${this.state.coin}'/0'/0/0` 
+     });
   };
 
   handleChangeFees = e => {
@@ -121,7 +124,10 @@ class FundsTransfer extends Component {
   };
 
   handleChangeCoin = e => {
-    this.setState({ coin: e.target.value });
+    this.setState({ 
+      coin: e.target.value,
+      path: `${(this.state.segwit? 49 : 44)}'/${e.target.value}'/0'/0/0` 
+     });
   };
 
   getFees = async () => {
