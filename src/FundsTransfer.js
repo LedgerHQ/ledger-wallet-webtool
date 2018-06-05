@@ -83,9 +83,10 @@ class FundsTransfer extends Component {
   };
 
   handleChangeSegwit = e => {
+    let isSegwit = e.target.checked;
     this.setState({ 
-      segwit: !this.state.segwit,
-      path: `${(this.state.segwit? 44 : 49)}'/${this.state.coin}'/0'/0/0` 
+      segwit: isSegwit,
+      path: `${(isSegwit? 49 : 44)}'/${this.state.coin}'/0'/0/0` 
      });
   };
 
