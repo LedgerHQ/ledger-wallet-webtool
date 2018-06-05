@@ -54,7 +54,6 @@ class AddressChecker extends Component {
       segwit: isSegwit,
       path: `${this.hdAddress.getPath(isSegwit, this.state.coin, this.state.path)}`,
     });
-    console.log(this.state.segwit);
   };
 
   handleChangePath = e => {
@@ -97,7 +96,7 @@ class AddressChecker extends Component {
       }
     }
   };
-  
+
   render() {
     var coinSelect = [];
     for (var coin in Networks) {
