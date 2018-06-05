@@ -183,7 +183,7 @@ var createOutputScript = function(recipientAddress, amount, coin) {
       .concat(ledger.Amount.fromSatoshi(0).toScriptByteString())
       .concat(OpReturnScript(data));
   }*/
-  return [outputScript, p2sh];
+  return outputScript;
 };
 
 export var createPaymentTransaction = async (
@@ -191,7 +191,8 @@ export var createPaymentTransaction = async (
   amount,
   utxos,
   path,
-  coin
+  coin,
+  segwit
 ) => {
   amount = Math.floor(amount);
   let indexes = [];
@@ -230,11 +231,7 @@ export var createPaymentTransaction = async (
   }
   const inputs = zip(txs, indexes);
   console.log("inputs", inputs);
-  const [outputScript, p2sh] = createOutputScript(
-    recipientAddress,
-    amount,
-    coin
-  );
+  const outputScript = createOutputScript(recipientAddress, amount, coin);
   console.log("output script", outputScript);
   const res = await btc.createPaymentTransactionNew(
     inputs,
@@ -243,10 +240,11 @@ export var createPaymentTransaction = async (
     outputScript.toString("hex"),
     undefined,
     Networks[coin].sigHash,
-    p2sh,
+    segwit,
     Networks[coin].areTransactionTimestamped
       ? Math.floor(Date.now() / 1000) - 15 * 60
-      : undefined
+      : undefined,
+    Networks[coin].additionals
   );
   return res;
 };
