@@ -86,7 +86,7 @@ class FundsTransfer extends Component {
     let isSegwit = e.target.checked;
     this.setState({ 
       segwit: isSegwit,
-      path: `${(isSegwit? 49 : 44)}'/${this.state.coin}'/0'/0/0` 
+      path: `${(isSegwit? 49 : 44)}'/${this.state.coin}'/${this.getAccountPathOnwards()}` 
      });
   };
 
@@ -127,8 +127,15 @@ class FundsTransfer extends Component {
   handleChangeCoin = e => {
     this.setState({ 
       coin: e.target.value,
-      path: `${(this.state.segwit? 49 : 44)}'/${e.target.value}'/0'/0/0` 
+      path: `${(this.state.segwit? 49 : 44)}'/${e.target.value}'/${this.getAccountPathOnwards()}` 
      });
+  };
+
+  getAccountPathOnwards = () => {
+    const fullPath = this.state.path;
+    const indexOfFirstSlash = fullPath.indexOf("/");
+    var indexOfSecondSlash = fullPath.indexOf("/", indexOfFirstSlash+1);
+    return fullPath.substr(indexOfSecondSlash+1);
   };
 
   getFees = async () => {

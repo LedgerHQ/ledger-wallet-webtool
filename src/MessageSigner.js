@@ -87,9 +87,16 @@ class MessageSigner extends Component {
   handleChangeCoin = e => {
     this.setState({ 
       coin: e.target.value, 
-      path: `49'/${e.target.value}'/0'/0/0`,
+      path: `49'/${e.target.value}'/${this.getAccountPathOnwards()}`,
       done: false, 
       error: false });
+  };
+
+  getAccountPathOnwards = () => {
+    const fullPath = this.state.path;
+    const indexOfFirstSlash = fullPath.indexOf("/");
+    var indexOfSecondSlash = fullPath.indexOf("/", indexOfFirstSlash+1);
+    return fullPath.substr(indexOfSecondSlash+1);
   };
 
   sign = async e => {
