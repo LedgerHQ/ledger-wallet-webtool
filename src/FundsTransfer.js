@@ -20,6 +20,8 @@ import {
   createPaymentTransaction
 } from "./TransactionUtils";
 import Errors from "./Errors";
+import HDAddress from "./HDAddress"
+
 const VALIDATIONS = {
   6: "slow",
   3: "medium",
@@ -27,6 +29,8 @@ const VALIDATIONS = {
 };
 
 class FundsTransfer extends Component {
+  hdAddress = new HDAddress();
+
   constructor(props) {
     super();
     this.state = {
@@ -86,7 +90,7 @@ class FundsTransfer extends Component {
     let isSegwit = e.target.checked;
     this.setState({ 
       segwit: isSegwit,
-      path: `${(isSegwit? 49 : 44)}'/${this.state.coin}'/${this.getAccountPathOnwards()}` 
+      path: `${this.hdAddress.getPath(isSegwit, this.state.coin, this.state.path)}`,
      });
   };
 
@@ -127,15 +131,8 @@ class FundsTransfer extends Component {
   handleChangeCoin = e => {
     this.setState({ 
       coin: e.target.value,
-      path: `${(this.state.segwit? 49 : 44)}'/${e.target.value}'/${this.getAccountPathOnwards()}` 
+      path: `${this.hdAddress.getPath(this.state.segwit, e.target.value, this.state.path)}`,
      });
-  };
-
-  getAccountPathOnwards = () => {
-    const fullPath = this.state.path;
-    const indexOfFirstSlash = fullPath.indexOf("/");
-    var indexOfSecondSlash = fullPath.indexOf("/", indexOfFirstSlash+1);
-    return fullPath.substr(indexOfSecondSlash+1);
   };
 
   getFees = async () => {

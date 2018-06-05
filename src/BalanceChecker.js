@@ -20,6 +20,8 @@ import Networks from "./Networks";
 import { findAddress, initialize } from "./PathFinderUtils";
 import { estimateTransactionSize } from "./TransactionUtils";
 import Errors from "./Errors";
+import HDAddress from "./HDAddress"
+
 const initialState = {
   done: false,
   running: false,
@@ -36,7 +38,10 @@ const initialState = {
   lastIndex: [0, 0],
   totalBalance: 0
 };
+
 class BalanceChecker extends Component {
+  hdAddress = new HDAddress();
+  
   constructor(props) {
     super();
     if (localStorage.getItem("LedgerBalanceChecker")) {
@@ -102,7 +107,7 @@ class BalanceChecker extends Component {
     let isSegwit = e.target.checked;
     this.setState({ 
       segwit: isSegwit,
-      path: `${(isSegwit? 49 : 44)}'/${this.state.coin}'/${this.getAccountPathOnwards()}`  
+      path: `${this.hdAddress.getPath(isSegwit, this.state.coin, this.state.path)}`,
     });
   };
 
@@ -122,15 +127,8 @@ class BalanceChecker extends Component {
     this.reset();
     this.setState({ 
       coin: e.target.value,
-      path: `${(this.state.segwit? 49 : 44)}'/${e.target.value}'/${this.getAccountPathOnwards()}`
+      path: `${this.hdAddress.getPath(this.state.isSegwit, e.target.value, this.state.path)}`,
     });
-  };
-
-  getAccountPathOnwards = () => {
-    const fullPath = this.state.path;
-    const indexOfFirstSlash = fullPath.indexOf("/");
-    var indexOfSecondSlash = fullPath.indexOf("/", indexOfFirstSlash+1);
-    return fullPath.substr(indexOfSecondSlash+1);
   };
 
   onUpdate = (e, i, j) => {
