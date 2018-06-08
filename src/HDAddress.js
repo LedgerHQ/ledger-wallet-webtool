@@ -6,8 +6,8 @@ export default class HDAddress {
   };
 
   getPath = (isSegwit, coinType, path) => {
-    const sigwitPurpose = 49;
+    const segwitPurpose = 49;
     const nonSegWitPurpose = 44;
-    return `${isSegwit? sigwitPurpose : nonSegWitPurpose}'/${coinType}'/${this.getAccountPathOnwards(path)}`;
+    return `${isSegwit? segwitPurpose : nonSegWitPurpose}'/${coinType}'/${this.getAccountPathOnwards(path)}`;
   };
 };

@@ -52,7 +52,7 @@ class AddressChecker extends Component {
     let isSegwit = e.target.checked;
     this.setState({ 
       segwit: isSegwit,
-      path: `${this.hdAddress.getPath(isSegwit, this.state.coin, this.state.path)}`,
+      path: this.hdAddress.getPath(isSegwit, this.state.coin, this.state.path),
     });
   };
 
@@ -63,7 +63,7 @@ class AddressChecker extends Component {
   handleChangeCoin = e => {
     this.setState({ 
       coin: e.target.value,
-      path: `${this.hdAddress.getPath(this.state.segwit, e.target.value, this.state.path)}`,
+      path: this.hdAddress.getPath(this.state.segwit, e.target.value, this.state.path),
     });
   };
 
