@@ -5,6 +5,7 @@
   "private": true,
   "dependencies": {
     "@ledgerhq/hw-app-btc": "4.2.2",
+    "@ledgerhq/hw-app-xrp": "^4.13.0",
     "@ledgerhq/hw-transport-u2f": "^4.7.2",
     "autoprefixer": "7.1.6",
     "babel-core": "6.26.0",
@@ -24,13 +25,9 @@
     "css-loader": "0.28.7",
     "dotenv": "4.0.0",
     "elliptic": "^6.4.0",
-    "eslint": "4.10.0",
     "eslint-config-react-app": "^2.0.1",
     "eslint-loader": "1.9.0",
     "eslint-plugin-flowtype": "2.39.1",
-    "eslint-plugin-import": "2.8.0",
-    "eslint-plugin-jsx-a11y": "5.1.1",
-    "eslint-plugin-react": "7.4.0",
     "extract-text-webpack-plugin": "3.0.2",
     "file-loader": "1.1.5",
     "fs-extra": "3.0.1",
@@ -49,6 +46,8 @@
     "react-dom": "^16.2.0",
     "react-inspector": "^2.2.2",
     "react-router-dom": "^4.2.2",
+    "ripple-binary-codec": "^0.1.13",
+    "ripple-bs58check": "^2.0.2",
     "ripple-lib": "^0.21.0",
     "style-loader": "0.19.0",
     "sw-precache-webpack-plugin": "0.11.4",
@@ -66,6 +65,11 @@
     "deploy": "gh-pages -d build"
   },
   "devDependencies": {
+    "eslint": "^4.19.1",
+    "eslint-config-airbnb": "^16.1.0",
+    "eslint-plugin-import": "^2.12.0",
+    "eslint-plugin-jsx-a11y": "^6.0.3",
+    "eslint-plugin-react": "^7.9.1",
     "gh-pages": "^1.1.0"
   },
   "jest": {

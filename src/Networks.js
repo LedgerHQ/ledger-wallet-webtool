@@ -74,7 +74,8 @@ const networks = {
     },
     sigHash: 0x41,
     isSegwitSupported: true,
-    handleFeePerByte: true
+    handleFeePerByte: true,
+    additionals: ["abc"]
   },
   128: {
     apiName: "vtc",
@@ -301,7 +302,8 @@ const networks = {
     sigHash: 0x41,
     isSegwitSupported: true,
     handleFeePerByte: true,
-    areTransactionTimestamped: undefined
+    areTransactionTimestamped: undefined,
+    additionals: ["gold"]
   },
   171: {
     name: "hcash",

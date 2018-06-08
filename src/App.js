@@ -9,6 +9,7 @@ import BalanceChecker from "./BalanceChecker";
 import MessageSigner from "./MessageSigner";
 import MessageChecker from "./MessageChecker";
 import RippleRecoverer from "./RippleRecoverer";
+import RippleTransferer from "./RippleTransferer";
 import "./App.css";
 
 class App extends Component {
@@ -51,6 +52,9 @@ class App extends Component {
         break;
       case "rippleRecoverer":
         content = <RippleRecoverer />;
+        break;
+      case "rippleTransferer":
+        content = <RippleTransferer />;
         break;
       default:
         content = <Home />;
@@ -121,7 +125,14 @@ class App extends Component {
               href="#"
               onClick={() => this.handleNav("rippleRecoverer")}
             >
-              Recover XRP
+              Recover XRP without device
+            </NavItem>
+            <NavItem
+              eventKey={1}
+              href="#"
+              onClick={() => this.handleNav("rippleTransferer")}
+            >
+              Temporary XRP wallet
             </NavItem>
           </Nav>
         </Navbar>
