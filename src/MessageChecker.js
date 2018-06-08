@@ -129,7 +129,7 @@ class MessageChecker extends Component {
             <FormControl.Feedback />
             <br />
             <p>Message hash: {this.state.message && this.state.hash}</p>
-            <ButtonToolbar style={{ marginTop: "10px" }}>
+            <ButtonToolbar >
               <Button
                 bsSize="large"
                 onClick={this.verify}

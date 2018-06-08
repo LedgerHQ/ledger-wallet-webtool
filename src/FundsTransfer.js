@@ -437,7 +437,7 @@ class FundsTransfer extends Component {
             />
             <FormControl.Feedback />
             <br />
-            <ButtonToolbar style={{ marginTop: "10px" }}>
+            <ButtonToolbar >
               {!this.state.prepared && (
                 <Button
                   bsSize="large"

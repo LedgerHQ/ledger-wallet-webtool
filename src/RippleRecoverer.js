@@ -182,7 +182,7 @@ class RippleRecoverer extends Component {
               disabled={this.state.running || this.state.prepared}
             />
           </FormGroup>
-          <ButtonToolbar style={{ marginTop: "10px" }}>
+          <ButtonToolbar >
             <Button bsStyle="primary" bsSize="large" onClick={this.prepare}>
               Recover Balance
             </Button>
@@ -197,7 +197,7 @@ class RippleRecoverer extends Component {
         </form>
 
         {this.state.prepared && (
-          <form onSubmit={this.send} style={{ marginTop: "10px" }}>
+          <form onSubmit={this.send} >
             <FormGroup controlId="RippleRecovererSend">
               <Alert bsStyle="success">
                 <strong>Funds found!</strong>
@@ -247,7 +247,7 @@ class RippleRecoverer extends Component {
                 disabled={this.state.running}
               />
             </FormGroup>
-            <ButtonToolbar style={{ marginTop: "10px" }}>
+            <ButtonToolbar >
               <Button bsStyle="primary" bsSize="large" onClick={this.send}>
                 Send
               </Button>

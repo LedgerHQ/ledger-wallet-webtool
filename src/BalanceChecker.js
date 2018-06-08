@@ -389,7 +389,7 @@ class BalanceChecker extends Component {
               disabled={this.state.running || this.state.paused}
             />
             <br />
-            <ButtonToolbar style={{ marginTop: "10px" }}>
+            <ButtonToolbar >
               {!this.state.running &&
                 !this.state.paused &&
                 !this.state.done && (

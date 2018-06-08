@@ -241,7 +241,7 @@ class RippleTransferer extends Component {
               onChange={this.handleChangePath}
               disabled={this.state.running || this.state.prepared}
             />
-            <ControlLabel style={{ marginTop: "10px" }}>Rippled node to use</ControlLabel>
+            <ControlLabel >Rippled node to use</ControlLabel>
             <FormControl
               type="text"
               value={this.state.node}
@@ -250,7 +250,7 @@ class RippleTransferer extends Component {
               disabled={this.state.running || this.state.prepared}
             />
           </FormGroup>
-          <ButtonToolbar style={{ marginTop: "10px" }}>
+          <ButtonToolbar >
             {!this.state.prepared && (
             <Button bsStyle="primary" bsSize="large" onClick={this.prepare} disabled={this.state.running}>
               Query my account
@@ -270,7 +270,7 @@ class RippleTransferer extends Component {
             </Button>
           </ButtonToolbar>
       {this.state.prepared && !this.state.empty && (
-        <form onSubmit={this.send} style={{ marginTop: "10px" }}>
+        <form onSubmit={this.send}>
         <FormGroup controlId="RippleRecovererSend">
           <Alert bsStyle="success">
             <strong>Funds found!</strong>
@@ -286,7 +286,7 @@ class RippleTransferer extends Component {
             onChange={this.handleChangeRecipient}
             disabled={this.state.running}
           />
-          <ControlLabel style={{ marginTop: "10px" }}>
+          <ControlLabel >
             Amount in XRP
           </ControlLabel>
           <FormControl
@@ -296,7 +296,7 @@ class RippleTransferer extends Component {
             onChange={this.handleChangeAmount}
             disabled={this.state.running}
           />
-          <ControlLabel style={{ marginTop: "10px" }}>Fees in drops (1 drop = 0.000001 XRP)</ControlLabel>
+          <ControlLabel >Fees in drops (1 drop = 0.000001 XRP)</ControlLabel>
           <FormControl
             type="number"
             placeholder="10 is the standard fees"
@@ -305,7 +305,7 @@ class RippleTransferer extends Component {
             disabled={this.state.running}
           />
           
-          <ControlLabel style={{ marginTop: "10px" }}>Destination Tag</ControlLabel>
+          <ControlLabel >Destination Tag</ControlLabel>
           <FormControl
             type="number"
             placeholder="This can remain empty if not needed"
@@ -314,7 +314,7 @@ class RippleTransferer extends Component {
             disabled={this.state.running}
           />
         </FormGroup>
-        <ButtonToolbar style={{ marginTop: "10px" }}>
+        <ButtonToolbar >
           <Button bsStyle="primary" bsSize="large" onClick={this.send} disabled={this.state.running || !parseFloat(this.state.amount)}>
             Send
           </Button>
