@@ -169,6 +169,7 @@ class RippleRecoverer extends Component {
             <ControlLabel>Your XRP address</ControlLabel>
             <FormControl
               type="text"
+              placeholder="Enter your XRP address here"
               value={this.state.address}
               onChange={this.handleChangeAddress}
               disabled={this.state.running || this.state.prepared}
