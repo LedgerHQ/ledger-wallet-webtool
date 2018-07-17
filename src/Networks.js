@@ -269,7 +269,8 @@ const networks = {
     },
     isSegwitSupported: false,
     handleFeePerByte: false,
-    areTransactionTimestamped: undefined
+    areTransactionTimestamped: undefined,
+    expiryHeight: Buffer.from("00000000", 'hex')
   },
   141: {
     name: "komodo",

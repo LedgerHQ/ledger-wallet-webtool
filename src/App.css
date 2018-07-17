@@ -34,3 +34,16 @@
 .selected {
   color: #000;
 }
+
+.control-label, .alert, .btn-toolbar {
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+
+.react-bs-table-container {
+  cursor: pointer;
+}
+
+.react-bs-table-pagination {
+  text-align: left;
+}
