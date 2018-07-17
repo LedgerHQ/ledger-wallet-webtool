@@ -321,6 +321,19 @@ const networks = {
     isSegwitSupported: false,
     handleFeePerByte: false,
     areTransactionTimestamped: true
+  },
+  121: {
+    name: "zencash",
+    satoshi: 8,
+    unit: "ZEN",
+    apiName: "zen",
+    bitcoinjs: {
+      messagePrefix: "Zencash Signed Message:",
+      bip32: { public: 76067358, private: 87393172 },
+      pubKeyHash: 0x2089,
+      scriptHash: 0x2096,
+      wif: 128
+    },
   }
 };
 
