@@ -4,7 +4,7 @@
   "homepage": "./",
   "private": true,
   "dependencies": {
-    "@ledgerhq/hw-app-btc": "4.2.2",
+    "@ledgerhq/hw-app-btc": "^4.20.0",
     "@ledgerhq/hw-app-xrp": "^4.13.0",
     "@ledgerhq/hw-transport-u2f": "^4.7.2",
     "autoprefixer": "7.1.6",

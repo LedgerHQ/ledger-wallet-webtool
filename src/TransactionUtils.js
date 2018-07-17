@@ -244,7 +244,8 @@ export var createPaymentTransaction = async (
     Networks[coin].areTransactionTimestamped
       ? Math.floor(Date.now() / 1000) - 15 * 60
       : undefined,
-    Networks[coin].additionals
+    Networks[coin].additionals,
+    Networks[coin].expiryHeight
   );
   return res;
 };
