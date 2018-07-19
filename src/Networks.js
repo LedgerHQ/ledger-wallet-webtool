@@ -334,6 +334,19 @@ const networks = {
       scriptHash: 0x2096,
       wif: 128
     },
+  },
+  3: {
+    name: "dogecoin",
+    satoshi: 8,
+    unit: "Ð",
+    apiName: "doge",
+    bitcoinjs: {
+      messagePrefix: "Dogecoin Signed Message:",
+      bip32: { public: 0x02facafd, private: 87393172 },
+      pubKeyHash: 30,
+      scriptHash: 22,
+      wif: 128
+    },
   }
 };
 
