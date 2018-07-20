@@ -2,7 +2,7 @@ import { Navbar, Nav, NavItem } from "react-bootstrap";
 import React, { Component } from "react";
 import Home from "./Home";
 import PathFinder from "./PathFinder";
-import FundsTransfer from "./FundsTransfer";
+import FundsRecoverer from "./FundsRecoverer";
 import AddressChecker from "./AddressChecker";
 import TxChecker from "./TxChecker";
 import BalanceChecker from "./BalanceChecker";
@@ -32,8 +32,8 @@ class App extends Component {
       case "pathFinder":
         content = <PathFinder />;
         break;
-      case "fundsTransfer":
-        content = <FundsTransfer />;
+      case "fundsRecoverer":
+        content = <FundsRecoverer />;
         break;
       case "addressChecker":
         content = <AddressChecker />;
@@ -81,9 +81,9 @@ class App extends Component {
             <NavItem
               eventKey={1}
               href="#"
-              onClick={() => this.handleNav("fundsTransfer")}
+              onClick={() => this.handleNav("fundsRecoverer")}
             >
-              Transfer Funds
+              Recover Funds
             </NavItem>
             <NavItem
               eventKey={1}

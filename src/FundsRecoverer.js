@@ -26,7 +26,7 @@ const VALIDATIONS = {
   1: "fast"
 };
 
-class FundsTransfer extends Component {
+class FundsRecoverer extends Component {
   constructor(props) {
     super();
     this.state = {
@@ -36,6 +36,7 @@ class FundsTransfer extends Component {
       prepared: false,
       destination: "",
       coin: "1",
+      wrongCoin: "1",
       error: false,
       segwit: true,
       fees: 0,
@@ -123,6 +124,9 @@ class FundsTransfer extends Component {
   handleChangeCoin = e => {
     this.setState({ coin: e.target.value });
   };
+  handleChangeWrongCoin = e => {
+    this.setState({ wrongCoin: e.target.value });
+  };
 
   getFees = async () => {
     try {
@@ -153,7 +157,7 @@ class FundsTransfer extends Component {
       address = await findAddress(
         this.state.path,
         this.state.segwit,
-        this.state.coin,
+        this.state.wrongCoin,
         this.state.useXpub ? this.state.xpub58 : undefined
       );
     } catch (e) {
@@ -337,6 +341,16 @@ class FundsTransfer extends Component {
         );
       }
     }
+    var wrongCoinSelect = [];
+    for (var coin in Networks) {
+      if (Networks.hasOwnProperty(coin)) {
+        wrongCoinSelect.push(
+          <option value={coin} key={coin} selected={coin === this.state.wrongCoin}>
+            {Networks[coin].name}
+          </option>
+        );
+      }
+    }
 
     let feeSelect = [];
     Object.keys(VALIDATIONS).forEach(blocks => {
@@ -358,7 +372,7 @@ class FundsTransfer extends Component {
     );
 
     return (
-      <div className="FundsTransfer">
+      <div className="FundsRecoverer">
         {this.state.error && (
           <Alert bsStyle="danger">
             <strong>Operation aborted</strong>
@@ -382,7 +396,7 @@ class FundsTransfer extends Component {
           </Alert>
         )}
         <form onSubmit={this.prepare}>
-          <FormGroup controlId="FundsTransfer">
+          <FormGroup controlId="FundsRecoverer">
             <DropdownButton
               title={this.state.useXpub ? derivations[1] : derivations[0]}
               disabled={this.state.running || this.state.paused}
@@ -411,7 +425,7 @@ class FundsTransfer extends Component {
                 />
               </div>
             )}
-            <ControlLabel>Currency</ControlLabel>
+            <ControlLabel>Currency to recover</ControlLabel>
             <FormControl
               componentClass="select"
               placeholder="select"
@@ -419,6 +433,15 @@ class FundsTransfer extends Component {
               disabled={this.state.running || this.state.prepared}
             >
               {coinSelect}
+            </FormControl>
+            <ControlLabel>The address that received the funds was initially generated for:</ControlLabel>
+            <FormControl
+              componentClass="select"
+              placeholder="select"
+              onChange={this.handleChangeWrongCoin}
+              disabled={this.state.running || this.state.prepared}
+            >
+              {wrongCoinSelect}
             </FormControl>
             <Checkbox
               onChange={this.handleChangeSegwit}
@@ -538,4 +561,4 @@ class FundsTransfer extends Component {
   }
 }
 
-export default FundsTransfer;
+export default FundsRecoverer;
