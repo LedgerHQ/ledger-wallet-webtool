@@ -10,6 +10,7 @@ import MessageSigner from "./MessageSigner";
 import MessageChecker from "./MessageChecker";
 import RippleRecoverer from "./RippleRecoverer";
 import RippleTransferer from "./RippleTransferer";
+import TransactionDecoder from "./TransactionDecoder";
 import "./App.css";
 
 class App extends Component {
@@ -40,6 +41,9 @@ class App extends Component {
         break;
       case "txChecker":
         content = <TxChecker />;
+        break;
+      case "transactionDecoder":
+        content = <TransactionDecoder />;
         break;
       case "balanceChecker":
         content = <BalanceChecker />;
@@ -98,6 +102,13 @@ class App extends Component {
               onClick={() => this.handleNav("txChecker")}
             >
               Check Tx
+            </NavItem>
+            <NavItem
+              eventKey={1}
+              href="#"
+              onClick={() => this.handleNav("transactionDecoder")}
+            >
+              Decode raw Tx
             </NavItem>
             <NavItem
               eventKey={1}
