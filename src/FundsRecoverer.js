@@ -20,6 +20,7 @@ import {
   createPaymentTransaction
 } from "./TransactionUtils";
 import Errors from "./Errors";
+const bitcoinjs = require("bitcoinjs-lib");
 const VALIDATIONS = {
   6: "slow",
   3: "medium",
@@ -160,6 +161,10 @@ class FundsRecoverer extends Component {
         this.state.wrongCoin,
         this.state.useXpub ? this.state.xpub58 : undefined
       );
+      if (this.state.coin == 2 && address.startsWith("3")) {
+        const decoded = bitcoinjs.address.fromBase58Check(address);
+        address = bitcoinjs.address.toBase58Check(decoded["hash"], 50);
+      }
     } catch (e) {
       this.onError(Errors.u2f);
     }
