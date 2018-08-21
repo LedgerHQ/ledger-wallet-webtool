@@ -350,7 +350,11 @@ class FundsRecoverer extends Component {
     for (var coin in Networks) {
       if (Networks.hasOwnProperty(coin)) {
         wrongCoinSelect.push(
-          <option value={coin} key={coin} selected={coin === this.state.wrongCoin}>
+          <option
+            value={coin}
+            key={coin}
+            selected={coin === this.state.wrongCoin}
+          >
             {Networks[coin].name}
           </option>
         );
@@ -439,7 +443,9 @@ class FundsRecoverer extends Component {
             >
               {coinSelect}
             </FormControl>
-            <ControlLabel>The address that received the funds was initially generated for:</ControlLabel>
+            <ControlLabel>
+              The address that received the funds was initially generated for:
+            </ControlLabel>
             <FormControl
               componentClass="select"
               placeholder="select"
@@ -465,7 +471,7 @@ class FundsRecoverer extends Component {
             />
             <FormControl.Feedback />
             <br />
-            <ButtonToolbar >
+            <ButtonToolbar>
               {!this.state.prepared && (
                 <Button
                   bsSize="large"
