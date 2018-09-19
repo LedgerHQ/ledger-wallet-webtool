@@ -161,7 +161,7 @@ export var findPath = async (params, onUpdate, onDone, onError) => {
 };
 
 export var findAddress = async (path, segwit, coin, xpub58) => {
-  if (parseInt(coin, 10) === 133) {
+  if (parseInt(coin, 10) === 133 || parseInt(coin, 10) === 121) {
     bitcoin = zcash;
   } else {
     bitcoin = bitcoinjs;
