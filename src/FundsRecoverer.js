@@ -20,7 +20,9 @@ import {
   createPaymentTransaction
 } from "./TransactionUtils";
 import Errors from "./Errors";
+import HDAddress from "./HDAddress";
 const bitcoinjs = require("bitcoinjs-lib");
+
 const VALIDATIONS = {
   6: "slow",
   3: "medium",
@@ -28,6 +30,8 @@ const VALIDATIONS = {
 };
 
 class FundsRecoverer extends Component {
+  hdAddress = new HDAddress();
+
   constructor(props) {
     super();
     this.state = {
@@ -85,7 +89,11 @@ class FundsRecoverer extends Component {
   };
 
   handleChangeSegwit = e => {
-    this.setState({ segwit: !this.state.segwit });
+    let isSegwit = e.target.checked;
+    this.setState({
+      segwit: isSegwit,
+      path: this.hdAddress.getPath(isSegwit, this.state.coin, this.state.path)
+    });
   };
 
   handleChangeSegwit2 = e => {
@@ -127,7 +135,14 @@ class FundsRecoverer extends Component {
   };
 
   handleChangeCoin = e => {
-    this.setState({ coin: e.target.value });
+    this.setState({
+      coin: e.target.value,
+      path: this.hdAddress.getPath(
+        this.state.segwit,
+        e.target.value,
+        this.state.path
+      )
+    });
   };
   handleChangeWrongCoin = e => {
     this.setState({ wrongCoin: e.target.value });

@@ -16,6 +16,7 @@ import {
 import Networks from "./Networks";
 import { findAddress } from "./PathFinderUtils";
 import Errors from "./Errors";
+import HDAddress from "./HDAddress";
 
 const initialState = {
   done: false,
@@ -32,6 +33,8 @@ const initialState = {
 };
 
 class MessageSigner extends Component {
+  hdAddress = new HDAddress();
+
   constructor(props) {
     super();
     if (localStorage.getItem("LedgerMessageSigner")) {
@@ -40,10 +43,6 @@ class MessageSigner extends Component {
       this.state = initialState;
     }
   }
-
-  handleChangeCoin = e => {
-    this.setState({ coin: e.target.value, done: false, result: [] });
-  };
 
   componentWillUnmount() {
     var state = {};
@@ -85,7 +84,13 @@ class MessageSigner extends Component {
   };
 
   handleChangeCoin = e => {
-    this.setState({ coin: e.target.value, done: false, error: false });
+    this.setState({
+      coin: e.target.value,
+      path: this.hdAddress.getPath(true, e.target.value, this.state.path),
+      done: false,
+      error: false,
+      result: []
+    });
   };
 
   sign = async e => {
@@ -181,7 +186,7 @@ class MessageSigner extends Component {
             <FormControl.Feedback />
             <br />
             <p>Message hash: {this.state.message && this.state.hash}</p>
-            <ButtonToolbar >
+            <ButtonToolbar>
               <Button
                 bsSize="large"
                 onClick={this.sign}

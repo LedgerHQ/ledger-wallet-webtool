@@ -20,6 +20,8 @@ import Networks from "./Networks";
 import { findAddress, initialize } from "./PathFinderUtils";
 import { estimateTransactionSize } from "./TransactionUtils";
 import Errors from "./Errors";
+import HDAddress from "./HDAddress"
+
 const initialState = {
   done: false,
   running: false,
@@ -36,7 +38,10 @@ const initialState = {
   lastIndex: [0, 0],
   totalBalance: 0
 };
+
 class BalanceChecker extends Component {
+  hdAddress = new HDAddress();
+  
   constructor(props) {
     super();
     if (localStorage.getItem("LedgerBalanceChecker")) {
@@ -99,7 +104,11 @@ class BalanceChecker extends Component {
 
   handleChangeSegwit = e => {
     this.reset();
-    this.setState({ segwit: !this.state.segwit });
+    let isSegwit = e.target.checked;
+    this.setState({ 
+      segwit: isSegwit,
+      path: this.hdAddress.getPath(isSegwit, this.state.coin, this.state.path),
+    });
   };
 
   handleChangeUseXpub = e => {
@@ -118,7 +127,7 @@ class BalanceChecker extends Component {
     this.reset();
     this.setState({ 
       coin: e.target.value,
-      path: `44'/${e.target.value}'/0'`
+      path: this.hdAddress.getPath(this.state.segwit, e.target.value, this.state.path),
     });
   };
 

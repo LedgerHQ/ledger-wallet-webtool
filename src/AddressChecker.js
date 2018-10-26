@@ -20,8 +20,11 @@ import {
 import Errors from "./Errors";
 import Transport from "@ledgerhq/hw-transport-u2f";
 import AppBtc from "@ledgerhq/hw-app-btc";
+import HDAddress from "./HDAddress"
 
 class AddressChecker extends Component {
+  hdAddress = new HDAddress();
+
   constructor(props) {
     super();
     this.state = {
@@ -32,7 +35,7 @@ class AddressChecker extends Component {
       done: false,
       running: false,
       segwit: false,
-      coin: "0"
+      coin: "1"
     };
   }
 
@@ -44,8 +47,13 @@ class AddressChecker extends Component {
       xpub58: ""
     });
   };
+
   handleChangeSegwit = e => {
-    this.setState({ segwit: !this.state.segwit });
+    let isSegwit = e.target.checked;
+    this.setState({ 
+      segwit: isSegwit,
+      path: this.hdAddress.getPath(isSegwit, this.state.coin, this.state.path),
+    });
   };
 
   handleChangePath = e => {
@@ -53,7 +61,10 @@ class AddressChecker extends Component {
   };
 
   handleChangeCoin = e => {
-    this.setState({ coin: e.target.value });
+    this.setState({ 
+      coin: e.target.value,
+      path: this.hdAddress.getPath(this.state.segwit, e.target.value, this.state.path),
+    });
   };
 
   check = async () => {
@@ -85,6 +96,7 @@ class AddressChecker extends Component {
       }
     }
   };
+
   render() {
     var coinSelect = [];
     for (var coin in Networks) {
