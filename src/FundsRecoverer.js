@@ -88,6 +88,10 @@ class FundsRecoverer extends Component {
     this.setState({ segwit: !this.state.segwit });
   };
 
+  handleChangeSegwit2 = e => {
+    this.setState({ segwit2: !this.state.segwit2 });
+  };
+
   handleChangeFees = e => {
     if (
       e.target.value &&
@@ -273,12 +277,16 @@ class FundsRecoverer extends Component {
     this.setState({ running: true, done: false, error: false });
     try {
       let tx;
+      if (this.state.coin == 2 && this.state.destination.startsWith("3")) {
+        throw "Standard LTC segwit addresses start with 'M', convert it on https://litecoin-project.github.io/p2sh-convert/";
+      }
       tx = await createPaymentTransaction(
         this.state.destination,
         this.state.balance - this.state.fees,
         this.state.utxos,
         this.state.path,
-        this.state.coin
+        this.state.coin,
+        this.state.segwit2
       );
       var body = JSON.stringify({
         tx: tx
@@ -443,6 +451,13 @@ class FundsRecoverer extends Component {
             >
               {coinSelect}
             </FormControl>
+            <Checkbox
+              onChange={this.handleChangeSegwit2}
+              checked={this.state.segwit2}
+              disabled={this.state.running || this.state.prepared}
+            >
+              It was a Segwit transaction
+            </Checkbox>
             <ControlLabel>
               The address that received the funds was initially generated for:
             </ControlLabel>
