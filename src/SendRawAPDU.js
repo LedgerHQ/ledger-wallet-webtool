@@ -57,27 +57,43 @@ class SendRawAPDU extends Component {
 
   send = async () => {
 
-    const apdu = Buffer.from(this.state["rawAPDU"], "hex")
+    this.setState({
+      running: true,
+      done: false,
+      error: false
+    });
 
-    if (apdu[4] != apdu.length - 5) {
-      apdu[4] = apdu.length - 5
-      console.log("APDU length has been updated for correctness sake")
+    try
+    {
+      const apdu = Buffer.from(this.state["rawAPDU"], "hex")
+
+      if (apdu[4] != apdu.length - 5) {
+        apdu[4] = apdu.length - 5
+        console.log("APDU length has been updated for correctness sake")
+      }
+
+      const devices = await Transport.list();
+      if (devices.length === 0) throw "no device";
+      const transport = await Transport.open(devices[0]);
+      transport.setScrambleKey(this.state["scrambleKey"])
+      transport.setExchangeTimeout(30000);
+      transport.setDebugMode(true);
+
+      const x = await transport.exchange(apdu);
+      this.setState({
+        running: false,
+        done: true,
+        responseAPDU: x.toString("hex"),
+        utf8Response: x.toString("utf8")
+      })
+    } 
+    catch(e)
+    {
+      this.onError(e);
     }
 
-    const devices = await Transport.list();
-    if (devices.length === 0) throw "no device";
-    const transport = await Transport.open(devices[0]);
-    transport.setScrambleKey(this.state["scrambleKey"])
-    transport.setExchangeTimeout(30000);
-    transport.setDebugMode(true);
-
-    const x = await transport.exchange(apdu);
-    this.setState({
-      responseAPDU: x.toString("hex"),
-      utf8Response: x.toString("utf8")
-    })
-    
   };
+
 
   render() {
     var coinSelect = [];
@@ -96,12 +112,6 @@ class SendRawAPDU extends Component {
           <Alert bsStyle="danger">
             <strong>Operation aborted</strong>
             <p style={{ wordWrap: "break-word" }}>{this.state.error}</p>
-          </Alert>
-        )}
-        {this.state.done && (
-          <Alert bsStyle="success">
-            <strong>XPUB</strong>
-            <p style={{ wordWrap: "break-word" }}>{this.state.xpub58}</p>
           </Alert>
         )}
         <ControlLabel>U2F Scramble Key</ControlLabel>
