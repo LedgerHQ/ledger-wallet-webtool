@@ -4,6 +4,7 @@ import Home from "./Home";
 import PathFinder from "./PathFinder";
 import FundsRecoverer from "./FundsRecoverer";
 import AddressChecker from "./AddressChecker";
+import SendRawAPDU from "./SendRawAPDU";
 import TxChecker from "./TxChecker";
 import BalanceChecker from "./BalanceChecker";
 import MessageSigner from "./MessageSigner";
@@ -38,6 +39,9 @@ class App extends Component {
         break;
       case "addressChecker":
         content = <AddressChecker />;
+        break;
+      case "sendRawAPDU":
+        content = <SendRawAPDU />;
         break;
       case "txChecker":
         content = <TxChecker />;
@@ -95,6 +99,13 @@ class App extends Component {
               onClick={() => this.handleNav("addressChecker")}
             >
               Check Address
+            </NavItem>
+            <NavItem
+              eventKey={1}
+              href="#"
+              onClick={() => this.handleNav("sendRawAPDU")}
+            >
+              Send Raw APDU
             </NavItem>
             <NavItem
               eventKey={1}
