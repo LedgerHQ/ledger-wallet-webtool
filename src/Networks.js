@@ -56,6 +56,25 @@ const networks = {
     },
     handleFeePerByte: false
   },
+  101: {
+    name: "gamecredits",
+    unit: "GAME",
+    apiName: "game",
+    isSegwitSupported: true,
+    satoshi: 8,
+    bitcoinjs: {
+      bech32: "bc",
+      bip32: {
+        private: 0x019d9cfe,
+        public: 0x019da462
+      },
+      messagePrefix: "Gamecredits Signed Message:",
+      pubKeyHash: 38,
+      scriptHash: 62,
+      wif: 0xa6
+    },
+    handleFeePerByte: false
+  },
   145: {
     name: "bitcoin cash",
     apiName: "abc",
