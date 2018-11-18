@@ -85,6 +85,7 @@ class SendRawAPDU extends Component {
       const x = await transport.exchange(apdu);
       this.setState({
         running: false,
+        warning: false,
         done: true,
         responseAPDU: x.toString("hex"),
         utf8Response: x.toString("utf8")
@@ -121,6 +122,18 @@ class SendRawAPDU extends Component {
           <Alert bsStyle="warning">
             <strong>Warning</strong>
             <p style={{ wordWrap: "break-word" }}>{this.state.warning}</p>
+          </Alert>
+        )}
+        {this.state.running && (
+          <Alert bsStyle="info">
+            <strong>Success</strong>
+            <p style={{ wordWrap: "break-word" }}>{"APDU sent successfully !"}</p>
+          </Alert>
+        )}
+        {this.state.done && (
+          <Alert bsStyle="success">
+            <strong>Success</strong>
+            <p style={{ wordWrap: "break-word" }}>{"APDU response received !"}</p>
           </Alert>
         )}
         <ControlLabel>U2F Scramble Key</ControlLabel>
