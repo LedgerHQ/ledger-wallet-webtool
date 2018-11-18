@@ -335,6 +335,25 @@ const networks = {
       wif: 128
     }
   },
+  400: {
+    apiName: "nix",
+    unit: "NIX",
+    name: "nix",
+    satoshi: 8,
+    bitcoinjs: {
+      bech32: "nix",
+      bip32: {
+        private: 76066276,
+        public: 76067358
+      },
+      messagePrefix: "NIX Signed Message:",
+      pubKeyHash: 38,
+      scriptHash: 53,
+      wif: 128
+    },
+    isSegwitSupported: true,
+    handleFeePerByte: true
+  },
   3: {
     name: "dogecoin",
     satoshi: 8,
