@@ -33,6 +33,7 @@ class SendRawAPDU extends Component {
       responseAPDU: "",
       utf8Response: "",
       error: false,
+      warning: false,
       done: false,
       running: false,
     };
@@ -41,6 +42,7 @@ class SendRawAPDU extends Component {
   onError = e => {
     this.setState({
       error: e.toString(),
+      warning: false,
       running: false,
       done: false,
     });
@@ -68,8 +70,9 @@ class SendRawAPDU extends Component {
       const apdu = Buffer.from(this.state["rawAPDU"], "hex")
 
       if (apdu[4] != apdu.length - 5) {
+        let wrong_len = apdu[4];
         apdu[4] = apdu.length - 5
-        console.log("APDU length has been updated for correctness sake")
+        this.setState({warning: "APDU length (byte n°5) has been updated from " + String(wrong_len) + " to " + String(apdu[4]) + " for correctness"});
       }
 
       const devices = await Transport.list();
@@ -114,6 +117,12 @@ class SendRawAPDU extends Component {
             <p style={{ wordWrap: "break-word" }}>{this.state.error}</p>
           </Alert>
         )}
+        {this.state.warning && (
+          <Alert bsStyle="warning">
+            <strong>Warning</strong>
+            <p style={{ wordWrap: "break-word" }}>{this.state.warning}</p>
+          </Alert>
+        )}
         <ControlLabel>U2F Scramble Key</ControlLabel>
         <FormControl
           type="text"
@@ -146,11 +155,13 @@ class SendRawAPDU extends Component {
         <FormControl
           componentClass="textarea"
           value={this.state.responseAPDU}
+          disabled
         />
         <ControlLabel>Response APDU (utf-8)</ControlLabel>
         <FormControl
           componentClass="textarea"
           value={this.state.utf8Response}
+          disabled
         />
       </div>
     );
