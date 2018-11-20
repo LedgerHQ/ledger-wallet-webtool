@@ -60,6 +60,7 @@ class TransactionDecoder extends Component {
           !!Networks[this.state.coin].expiryHeight
         )
       });
+      console.log("decoded tx", this.state.result);
     } catch (e) {
       this.onError(Errors.networkError);
     }
@@ -117,24 +118,22 @@ class TransactionDecoder extends Component {
             <p style={{ wordWrap: "break-word" }}>{this.state.error}</p>
           </Alert>
         )}
-        {this.state.done &&
-          !this.state.result && (
-            <Alert bsStyle="warning">
-              <strong>Success</strong>
-            </Alert>
-          )}
-        {this.state.done &&
-          this.state.result && (
-            <div>
-              <div
-                style={{
-                  textAlign: "left"
-                }}
-              >
-                <Inspector data={this.state.result} expandLevel={2} />
-              </div>
+        {this.state.done && !this.state.result && (
+          <Alert bsStyle="warning">
+            <strong>Success</strong>
+          </Alert>
+        )}
+        {this.state.done && this.state.result && (
+          <div>
+            <div
+              style={{
+                textAlign: "left"
+              }}
+            >
+              <Inspector data={this.state.result} expandLevel={2} />
             </div>
-          )}
+          </div>
+        )}
       </div>
     );
   }
