@@ -21,7 +21,9 @@ import {
 } from "./TransactionUtils";
 import Errors from "./Errors";
 import HDAddress from "./HDAddress";
-const bitcoinjs = require("bitcoinjs-lib");
+import zcash from "bitcoinjs-lib-zcash";
+import bitcoinjs from "bitcoinjs-lib";
+let bitcoin = bitcoinjs;
 
 const VALIDATIONS = {
   6: "slow",
@@ -40,8 +42,8 @@ class FundsRecoverer extends Component {
       address: "",
       prepared: false,
       destination: "",
-      coin: "1",
-      wrongCoin: "1",
+      coin: "0",
+      wrongCoin: "0",
       error: false,
       segwit: true,
       fees: 0,
@@ -54,7 +56,7 @@ class FundsRecoverer extends Component {
         6: 1000
       },
       balance: 0,
-      path: "49'/1'/0'/0/0",
+      path: "49'/0'/0'/0/0",
       utxos: {},
       txSize: 0,
       useXpub: false,
@@ -94,10 +96,6 @@ class FundsRecoverer extends Component {
       segwit: isSegwit,
       path: this.hdAddress.getPath(isSegwit, this.state.coin, this.state.path)
     });
-  };
-
-  handleChangeSegwit2 = e => {
-    this.setState({ segwit2: !this.state.segwit2 });
   };
 
   handleChangeFees = e => {
@@ -290,18 +288,28 @@ class FundsRecoverer extends Component {
 
   send = async () => {
     this.setState({ running: true, done: false, error: false });
+    if (
+      parseInt(this.state.coin, 10) === 133 ||
+      parseInt(this.state.coin, 10) === 121
+    ) {
+      bitcoin = zcash;
+    } else {
+      bitcoin = bitcoinjs;
+    }
     try {
       let tx;
       if (this.state.coin == 2 && this.state.destination.startsWith("3")) {
         throw "Standard LTC segwit addresses start with 'M', convert it on https://litecoin-project.github.io/p2sh-convert/";
       }
+
       tx = await createPaymentTransaction(
         this.state.destination,
         this.state.balance - this.state.fees,
         this.state.utxos,
         this.state.path,
         this.state.coin,
-        this.state.segwit2
+        bitcoin.address.fromBase58Check(this.state.destination).version ===
+          Networks[this.state.coin].bitcoin.scriptHash
       );
       var body = JSON.stringify({
         tx: tx
@@ -411,16 +419,15 @@ class FundsRecoverer extends Component {
             <p>{this.state.error}</p>
           </Alert>
         )}
-        {this.state.empty &&
-          !this.state.error && (
-            <Alert bsStyle="warning">
-              <strong>Empty address</strong>
-              <p>
-                The address {this.state.address} has no{" "}
-                {Networks[this.state.coin].unit} on it.{" "}
-              </p>
-            </Alert>
-          )}
+        {this.state.empty && !this.state.error && (
+          <Alert bsStyle="warning">
+            <strong>Empty address</strong>
+            <p>
+              The address {this.state.address} has no{" "}
+              {Networks[this.state.coin].unit} on it.{" "}
+            </p>
+          </Alert>
+        )}
         {this.state.done && (
           <Alert bsStyle="success">
             <strong>Transaction broadcasted!</strong>
@@ -466,13 +473,6 @@ class FundsRecoverer extends Component {
             >
               {coinSelect}
             </FormControl>
-            <Checkbox
-              onChange={this.handleChangeSegwit2}
-              checked={this.state.segwit2}
-              disabled={this.state.running || this.state.prepared}
-            >
-              It was a Segwit transaction
-            </Checkbox>
             <ControlLabel>
               The address that received the funds was initially generated for:
             </ControlLabel>
