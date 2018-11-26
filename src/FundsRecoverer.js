@@ -309,7 +309,7 @@ class FundsRecoverer extends Component {
         this.state.path,
         this.state.coin,
         bitcoin.address.fromBase58Check(this.state.destination).version ===
-          Networks[this.state.coin].bitcoin.scriptHash
+          Networks[this.state.coin].bitcoinjs.scriptHash
       );
       var body = JSON.stringify({
         tx: tx
