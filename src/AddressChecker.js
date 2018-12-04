@@ -20,7 +20,8 @@ import {
 import Errors from "./Errors";
 import Transport from "@ledgerhq/hw-transport-u2f";
 import AppBtc from "@ledgerhq/hw-app-btc";
-import HDAddress from "./HDAddress"
+import HDAddress from "./HDAddress";
+import Eth from "@ledgerhq/hw-app-eth";
 
 class AddressChecker extends Component {
   hdAddress = new HDAddress();
@@ -50,9 +51,9 @@ class AddressChecker extends Component {
 
   handleChangeSegwit = e => {
     let isSegwit = e.target.checked;
-    this.setState({ 
+    this.setState({
       segwit: isSegwit,
-      path: this.hdAddress.getPath(isSegwit, this.state.coin, this.state.path),
+      path: this.hdAddress.getPath(isSegwit, this.state.coin, this.state.path)
     });
   };
 
@@ -61,9 +62,13 @@ class AddressChecker extends Component {
   };
 
   handleChangeCoin = e => {
-    this.setState({ 
+    this.setState({
       coin: e.target.value,
-      path: this.hdAddress.getPath(this.state.segwit, e.target.value, this.state.path),
+      path: this.hdAddress.getPath(
+        this.state.segwit,
+        e.target.value,
+        this.state.path
+      )
     });
   };
 
@@ -76,16 +81,22 @@ class AddressChecker extends Component {
       const transport = await Transport.open(devices[0]);
       transport.setExchangeTimeout(30000);
       transport.setDebugMode(true);
-      const btc = new AppBtc(transport);
-      xpub58 = await initialize(
-        parseInt(this.state.coin, 10),
-        this.state.path.split("/")[0],
-        this.state.path.split("/")[1],
-        this.state.path.split("/")[2],
-        this.state.segwit
-      );
+      if (this.state.coin == "60") {
+        const eth = new Eth(transport);
+        xpub58 = "ETH and ETC addresses have no xpub";
+        await eth.getAddress(this.state.path, true);
+      } else {
+        const btc = new AppBtc(transport);
+        xpub58 = await initialize(
+          parseInt(this.state.coin, 10),
+          this.state.path.split("/")[0],
+          this.state.path.split("/")[1],
+          this.state.path.split("/")[2],
+          this.state.segwit
+        );
 
-      await btc.getWalletPublicKey(this.state.path, true, this.state.segwit);
+        await btc.getWalletPublicKey(this.state.path, true, this.state.segwit);
+      }
     } catch (e) {
     } finally {
       if (xpub58) {
@@ -108,6 +119,11 @@ class AddressChecker extends Component {
         );
       }
     }
+    coinSelect.push(
+      <option value={"60"} key={"60"} selected={coin === this.state.coin}>
+        ETH/ETC
+      </option>
+    );
     return (
       <div className="AddressChecker">
         {this.state.error && (
