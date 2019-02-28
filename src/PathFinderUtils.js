@@ -94,9 +94,7 @@ export var initialize = async (network, purpose, coin, account, segwit) => {
     var path = prevPath + "/" + account;
     let nodeData = await btc.getWalletPublicKey(path, undefined, segwit);
     var publicKey = compressPublicKey(nodeData.publicKey);
-    //console.log("puikeyu", publicKey);
     var childnum = (0x80000000 | account) >>> 0;
-    //console.log("childnum", childnum);
     var xpub = createXPUB(
       3,
       fingerprint,
