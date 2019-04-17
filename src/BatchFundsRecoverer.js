@@ -1,0 +1,605 @@
+import React, {Component} from "react";
+import fetchWithRetries from "./FetchWithRetries";
+
+import {
+  Button,
+  Checkbox,
+  form,
+  FormControl,
+  FormGroup,
+  ControlLabel,
+  ButtonToolbar,
+  Alert,
+  DropdownButton,
+  MenuItem
+} from "react-bootstrap";
+import Networks from "./Networks";
+import {findAddress} from "./PathFinderUtils";
+import {
+  estimateTransactionSize,
+  createPaymentTransactionBatch
+} from "./TransactionUtils";
+import Errors from "./Errors";
+import HDAddress from "./HDAddress";
+import zcash from "bitcoinjs-lib-zcash";
+import bitcoinjs from "bitcoinjs-lib";
+import FundsRecoverer from "./FundsRecoverer";
+
+let bitcoin = bitcoinjs;
+
+const VALIDATIONS = {
+  6: "slow",
+  3: "medium",
+  1: "fast"
+};
+
+class BatchFundsRecoverer extends FundsRecoverer {
+  hdAddress = new HDAddress();
+
+  constructor(props) {
+    super();
+    this.state.path = "49'/0'/0'/0/0,49'/0'/0'/0/1";
+  }
+
+  reset = () => {
+    // change states.
+    this.setState({
+      prepared: false,
+      running: false,
+      done: false,
+      empty: false
+    });
+  };
+
+  onError = e => {
+    this.setState({
+      error: e.toString(),
+      running: false,
+      done: false
+    });
+  };
+
+  handleChangeDestination = e => {
+    this.setState({destination: e.target.value.replace(/\s/g, "")});
+  };
+
+  handleChangePath = e => {
+    this.setState({path: e.target.value.replace(/\s/g, ""), done: false});
+  };
+
+  handleChangeSegwit = e => {
+    let isSegwit = e.target.checked;
+    let pathArray = this.state.path.split(",");
+    let changedPath = "";
+    let length = pathArray.length;
+    for (let i = 0; i < length; i++) {
+      changedPath += this.hdAddress.getPath(isSegwit, this.state.coin, pathArray[i]);
+      if (i < length - 1) {
+        changedPath += ","
+      }
+    }
+    this.setState({
+      segwit: isSegwit,
+      path: changedPath
+    });
+  };
+
+  handleChangeFees = e => {
+    if (
+      e.target.value &&
+      e.target.value * this.state.txSize < this.state.balance
+    ) {
+      this.setState({
+        customFees: false,
+        fees: this.state.txSize * e.target.value
+      });
+    } else {
+      this.setState({
+        customFees: true,
+        fees: this.state.customFeesVal * this.state.txSize
+      });
+    }
+  };
+
+  handleChangeUseXpub = e => {
+    this.setState({useXpub: e});
+  };
+
+  handleChangeXpub = e => {
+    this.setState({xpub58: e.target.value.replace(/\s/g, "")});
+  };
+
+  handleEditFees = e => {
+    if (e.target.value * this.state.txSize < this.state.balance) {
+      this.setState({
+        customFeesVal: e.target.value,
+        fees: this.state.txSize * e.target.value
+      });
+    }
+  };
+
+  handleChangeCoin = e => {
+    this.setState({
+      coin: e.target.value,
+      path: this.hdAddress.getPath(
+        this.state.segwit,
+        e.target.value,
+        this.state.path
+      )
+    });
+  };
+  handleChangeWrongCoin = e => {
+    this.setState({wrongCoin: e.target.value});
+  };
+
+  getFees = async () => {
+    try {
+      var path =
+        "https://api.ledgerwallet.com/blockchain/v2/" +
+        Networks[this.state.coin].apiName +
+        "/fees";
+      let response = await fetchWithRetries(path);
+      let data = await response.json();
+      this.setState({standardFees: data});
+    } catch (e) {
+    }
+  };
+
+  prepare = async e => {
+    e.preventDefault();
+    this.setState({
+      running: true,
+      prepared: false,
+      done: false,
+      empty: false,
+      error: false
+    });
+    let pathArray = this.state.path.split(",");
+    let pathLength = pathArray.length;
+    let addressArray = [];
+    let concatenatedAddresses = "";
+
+    let txs = [];
+    let spent = {};
+    for (let i = 0; i < pathLength; i++) {
+      let address;
+      try {
+        await this.getFees();
+        address = await findAddress(
+          pathArray[i],
+          this.state.segwit,
+          this.state.wrongCoin,
+          this.state.useXpub ? this.state.xpub58 : undefined
+        );
+        if (this.state.coin === 2 && address.startsWith("3")) {
+          const decoded = bitcoinjs.address.fromBase58Check(address);
+          address = bitcoinjs.address.toBase58Check(decoded["hash"], 50);
+        }
+        addressArray.push(address);
+        concatenatedAddresses += address;
+        if (i < pathLength - 1) {
+          concatenatedAddresses += ","
+        }
+      } catch (e) {
+        this.onError(Errors.u2f);
+      }
+    }
+
+    try {
+      let blockHash = "";
+      var apiPath =
+        "https://api.ledgerwallet.com/blockchain/v2/" +
+        Networks[this.state.coin].apiName +
+        "/addresses/" +
+        concatenatedAddresses +
+        "/transactions?noToken=true";
+      const iterate = async (blockHash = "") => {
+        const res = await fetchWithRetries(apiPath + blockHash);
+        const data = await res.json();
+        txs = txs.concat(data.txs);
+        if (!data.truncated) {
+          console.log(txs);
+          var utxos = {};
+          txs.forEach(tx => {
+            tx.inputs.forEach(input => {
+              if (addressArray.indexOf(input.address) > -1) {
+                if (!spent[input.output_hash]) {
+                  spent[input.output_hash] = {};
+                }
+                spent[input.output_hash][input.output_index] = true;
+              }
+            });
+          });
+          txs.forEach(tx => {
+            tx.outputs.forEach(output => {
+              if (addressArray.indexOf(output.address) > -1) {
+                if (!spent[tx.hash]) {
+                  spent[tx.hash] = {};
+                }
+                if (!spent[tx.hash][output.output_index]) {
+                  if (!utxos[tx.hash]) {
+                    utxos[tx.hash] = {};
+                  }
+                  tx.addressPath = pathArray[addressArray.indexOf(output.address)];
+                  utxos[tx.hash][output.output_index] = tx;
+                }
+              }
+            });
+          });
+          return [utxos, concatenatedAddresses];
+        } else {
+          return await iterate(
+            "&blockHash=" + data.txs[data.txs.length - 1].block.hash
+          );
+        }
+      };
+      let d = await iterate();
+      this.onPrepared(d);
+    } catch (e) {
+      this.onError(Errors.networkError);
+    }
+  };
+
+  onPrepared = d => {
+    const utxos = d[0];
+    let balance = 0;
+    let inputs = 0;
+    for (var utxo in utxos) {
+      if (utxos.hasOwnProperty(utxo)) {
+        for (var index in utxos[utxo]) {
+          if (utxos[utxo].hasOwnProperty(index)) {
+            balance += utxos[utxo][index].outputs[index].value;
+            inputs++;
+          }
+        }
+      }
+    }
+    if (balance <= 0) {
+      this.setState({
+        empty: true,
+        prepared: true,
+        running: false,
+        balance: balance,
+        address: d[1]
+      });
+    } else {
+      let txSize = Networks[this.state.coin].handleFeePerByte
+        ? estimateTransactionSize(inputs, 1, this.state.segwit).max
+        : Math.floor(
+        estimateTransactionSize(inputs, 1, this.state.segwit).max / 1000
+      ) + 1;
+      this.setState({
+        empty: false,
+        txSize,
+        prepared: true,
+        running: false,
+        utxos: utxos,
+        balance: balance,
+        address: d[1],
+        customFeesVal: 0,
+        fees:
+          txSize * this.state.standardFees[6] < balance
+            ? txSize * this.state.standardFees[6]
+            : 0,
+        customFees: txSize * this.state.standardFees[6] >= balance
+      });
+    }
+  };
+
+  send = async () => {
+    this.setState({running: true, done: false, error: false});
+    if (
+      parseInt(this.state.coin, 10) === 133 ||
+      parseInt(this.state.coin, 10) === 121
+    ) {
+      bitcoin = zcash;
+    } else {
+      bitcoin = bitcoinjs;
+    }
+    try {
+      let tx;
+      if (this.state.coin === 2 && this.state.destination.startsWith("3")) {
+        throw "Standard LTC segwit addresses start with 'M', convert it on https://litecoin-project.github.io/p2sh-convert/";
+      }
+
+      tx = await createPaymentTransactionBatch(
+        this.state.destination,
+        this.state.balance - this.state.fees,
+        this.state.utxos,
+        this.state.path,
+        this.state.coin,
+        bitcoin.address.fromBase58Check(this.state.address.split(",")[0]).version ===
+        Networks[this.state.coin].bitcoinjs.scriptHash
+      );
+      let body = JSON.stringify({
+        tx: tx
+      });
+      let path =
+        "https://api.ledgerwallet.com/blockchain/v2/" +
+        Networks[this.state.coin].apiName +
+        "/transactions/send";
+      console.log("res", tx);
+      let res;
+      try {
+        res = await fetchWithRetries(path, {
+          headers: {
+            "Content-Type": "application/json",
+            "Content-Length": JSON.stringify(body).length
+          },
+          method: "post",
+          body
+        });
+        if (!res.ok) {
+          throw "not ok";
+        }
+      } catch (e) {
+        if (e == "not ok") {
+          let err = await res.text();
+          err = JSON.parse(err);
+          console.error(err);
+          err = JSON.parse(err.error);
+          throw Errors.sendFail + err.error.message;
+        } else {
+          throw Errors.networkError;
+        }
+      }
+      this.onSent(res);
+    } catch (e) {
+      this.onError(e);
+    }
+  };
+
+  onSent = async tx => {
+    let error = false;
+    const json = await tx.json();
+    if (!json) {
+      console.error(error);
+      error = tx;
+    }
+    this.setState({
+      prepared: false,
+      running: false,
+      done: json.result,
+      error
+    });
+  };
+
+  render() {
+    let derivations = ["Derive from device", "Derive from XPUB"];
+
+    var coinSelect = [];
+    for (var coin in Networks) {
+      if (Networks.hasOwnProperty(coin)) {
+        coinSelect.push(
+          <option value={coin} key={coin} selected={coin === this.state.coin}>
+            {Networks[coin].name}
+          </option>
+        );
+      }
+    }
+    var wrongCoinSelect = [];
+    for (var coin in Networks) {
+      if (Networks.hasOwnProperty(coin)) {
+        wrongCoinSelect.push(
+          <option
+            value={coin}
+            key={coin}
+            selected={coin === this.state.wrongCoin}
+          >
+            {Networks[coin].name}
+          </option>
+        );
+      }
+    }
+
+    let feeSelect = [];
+    Object.keys(VALIDATIONS).forEach(blocks => {
+      if (
+        this.state.standardFees[blocks] * this.state.txSize <
+        this.state.balance
+      ) {
+        feeSelect.push(
+          <option value={this.state.standardFees[blocks]} key={blocks}>
+            {VALIDATIONS[blocks]} :{this.state.standardFees[blocks]}
+          </option>
+        );
+      }
+    });
+    feeSelect.push(
+      <option value={false} key={0} selected={this.state.customFees}>
+        Custom fees
+      </option>
+    );
+
+    return (
+      <div className="BatchFundsRecoverer">
+        {this.state.error && (
+          <Alert bsStyle="danger">
+            <strong>Operation aborted</strong>
+            <p>{this.state.error}</p>
+          </Alert>
+        )}
+        {this.state.empty && !this.state.error && (
+          <Alert bsStyle="warning">
+            <strong>Empty address</strong>
+            <p>
+              The address {this.state.address} has no{" "}
+              {Networks[this.state.coin].unit} on it.{" "}
+            </p>
+          </Alert>
+        )}
+        {this.state.done && (
+          <Alert bsStyle="success">
+            <strong>Transaction broadcasted!</strong>
+            <p>Please check online for confirmations. TX : {this.state.done}</p>
+          </Alert>
+        )}
+        <form onSubmit={this.prepare}>
+          <FormGroup controlId="BatchFundsRecoverer">
+            <DropdownButton
+              title={this.state.useXpub ? derivations[1] : derivations[0]}
+              disabled={this.state.running || this.state.paused}
+              bsStyle="primary"
+              bsSize="medium"
+              style={{marginBottom: "15px"}}
+            >
+              <MenuItem onClick={() => this.handleChangeUseXpub(false)}>
+                {" "}
+                {derivations[0]}{" "}
+              </MenuItem>
+              <MenuItem onClick={() => this.handleChangeUseXpub(true)}>
+                {" "}
+                {derivations[1]}{" "}
+              </MenuItem>
+            </DropdownButton>
+            <br/>
+            {this.state.useXpub && (
+              <div>
+                <ControlLabel>XPUB</ControlLabel>
+                <FormControl
+                  type="text"
+                  value={this.state.xpub58}
+                  onChange={this.handleChangeXpub}
+                  disabled={this.state.running || this.state.prepared}
+                />
+              </div>
+            )}
+            <ControlLabel>Currency to recover</ControlLabel>
+            <FormControl
+              componentClass="select"
+              placeholder="select"
+              onChange={this.handleChangeCoin}
+              disabled={this.state.running || this.state.prepared}
+            >
+              {coinSelect}
+            </FormControl>
+            <ControlLabel>
+              The address that received the funds was initially generated for:
+            </ControlLabel>
+            <FormControl
+              componentClass="select"
+              placeholder="select"
+              onChange={this.handleChangeWrongCoin}
+              disabled={this.state.running || this.state.prepared}
+            >
+              {wrongCoinSelect}
+            </FormControl>
+            <Checkbox
+              onChange={this.handleChangeSegwit}
+              checked={this.state.segwit}
+              disabled={this.state.running || this.state.prepared}
+            >
+              Segwit
+            </Checkbox>
+            <ControlLabel>Path</ControlLabel>
+            <FormControl
+              type="text"
+              value={this.state.path}
+              placeholder="44'/0'/0'/0/0,44'/0'/0'/0/1"
+              onChange={this.handleChangePath}
+              disabled={this.state.running || this.state.prepared}
+            />
+            <FormControl.Feedback/>
+            <br/>
+            <ButtonToolbar>
+              {!this.state.prepared && (
+                <Button
+                  bsSize="large"
+                  disabled={this.state.running}
+                  onClick={this.prepare}
+                >
+                  Recover Path
+                </Button>
+              )}
+              {this.state.prepared && (
+                <Button
+                  bsSize="large"
+                  disabled={this.state.running}
+                  onClick={this.reset}
+                >
+                  Change Path
+                </Button>
+              )}
+            </ButtonToolbar>
+          </FormGroup>
+        </form>
+
+        {this.state.prepared && (
+          <div className="prepared">
+            {!this.state.empty && (
+              <div>
+                <Alert bsStyle="success">
+                  <strong>Funds found!</strong>
+                  <p>
+                    The address {this.state.address} has{" "}
+                    {this.state.balance /
+                    10 ** Networks[this.state.coin].satoshi}{" "}
+                    {Networks[this.state.coin].unit} on it.
+                  </p>
+                </Alert>
+                <form>
+                  <ControlLabel>Destination</ControlLabel>
+                  <FormControl
+                    type="text"
+                    value={this.state.destination}
+                    placeholder="Address to send to"
+                    onChange={this.handleChangeDestination}
+                    disabled={this.state.running}
+                  />
+                  <ControlLabel>
+                    Fees per{" "}
+                    {Networks[this.state.coin].handleFeePerByte
+                      ? "byte"
+                      : "kilo byte"}
+                  </ControlLabel>
+                  <FormControl
+                    componentClass="select"
+                    placeholder="select"
+                    onChange={this.handleChangeFees}
+                    disabled={this.state.running}
+                  >
+                    {feeSelect}
+                  </FormControl>
+                  {this.state.customFees && (
+                    <FormControl
+                      type="text"
+                      value={this.state.customFeesVal}
+                      onChange={this.handleEditFees}
+                      disabled={this.state.running}
+                    />
+                  )}
+                </form>
+                <div className="amount">
+                  Total to receive :{" "}
+                  {(this.state.balance - this.state.fees) /
+                  10 ** Networks[this.state.coin].satoshi}{" "}
+                  {Networks[this.state.coin].unit} <br/>
+                  Total fees :{" "}
+                  {this.state.fees /
+                  10 ** Networks[this.state.coin].satoshi}{" "}
+                  {Networks[this.state.coin].unit} <br/>
+                </div>
+                <ButtonToolbar>
+                  <Button
+                    bsStyle="primary"
+                    bsSize="large"
+                    disabled={
+                      this.state.running ||
+                      !this.state.destination ||
+                      !this.state.fees
+                    }
+                    onClick={this.send}
+                  >
+                    Send
+                  </Button>
+                </ButtonToolbar>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+}
+
+export default BatchFundsRecoverer;
