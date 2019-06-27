@@ -20,7 +20,7 @@ import Networks from "./Networks";
 import { findAddress, initialize } from "./PathFinderUtils";
 import { estimateTransactionSize } from "./TransactionUtils";
 import Errors from "./Errors";
-import HDAddress from "./HDAddress"
+import HDAddress from "./HDAddress";
 
 const initialState = {
   done: false,
@@ -41,7 +41,7 @@ const initialState = {
 
 class BalanceChecker extends Component {
   hdAddress = new HDAddress();
-  
+
   constructor(props) {
     super();
     if (localStorage.getItem("LedgerBalanceChecker")) {
@@ -105,9 +105,9 @@ class BalanceChecker extends Component {
   handleChangeSegwit = e => {
     this.reset();
     let isSegwit = e.target.checked;
-    this.setState({ 
+    this.setState({
       segwit: isSegwit,
-      path: this.hdAddress.getPath(isSegwit, this.state.coin, this.state.path),
+      path: this.hdAddress.getPath(isSegwit, this.state.coin, this.state.path)
     });
   };
 
@@ -125,9 +125,13 @@ class BalanceChecker extends Component {
 
   handleChangeCoin = e => {
     this.reset();
-    this.setState({ 
+    this.setState({
       coin: e.target.value,
-      path: this.hdAddress.getPath(this.state.segwit, e.target.value, this.state.path),
+      path: this.hdAddress.getPath(
+        this.state.segwit,
+        e.target.value,
+        this.state.path
+      )
     });
   };
 
@@ -184,7 +188,8 @@ class BalanceChecker extends Component {
       selectedTx: false
     });
     try {
-      var emptyStreak = 0;
+      let emptyStreakInternal = 0;
+      let emptyStreakExternal = 0;
       let xpub58 = this.state.useXpub
         ? this.state.xpub58
         : await initialize(
@@ -200,11 +205,12 @@ class BalanceChecker extends Component {
         const data = await res.json();
         txs = txs.concat(data.txs);
         if (!data.truncated) {
-          if (data.txs.length < 1 && j === 0) {
-            emptyStreak++;
+          if (data.txs.length < 1) {
+            j === 0 ? emptyStreakExternal++ : emptyStreakInternal++;
             allTxs[address] = {};
             return 0;
           } else {
+            j === 0 ? (emptyStreakExternal = 0) : (emptyStreakInternal = 0);
             allTxs[address] = {};
             txs.forEach(tx => {
               let localBalance = 0;
@@ -245,7 +251,12 @@ class BalanceChecker extends Component {
         }
         return balance;
       };
-      for (i; emptyStreak < this.state.gap; i++) {
+      for (
+        i;
+        emptyStreakExternal <= this.state.gap ||
+        emptyStreakInternal <= this.state.gap;
+        i++
+      ) {
         if (this.state.error) {
           break;
         }
@@ -333,7 +344,6 @@ class BalanceChecker extends Component {
     }
 
     return (
-      
       <div className="BalanceChecker">
         <form onSubmit={this.recover}>
           <FormGroup controlId="BalanceChecker">
@@ -398,25 +408,22 @@ class BalanceChecker extends Component {
               disabled={this.state.running || this.state.paused}
             />
             <br />
-            <ButtonToolbar >
-              {!this.state.running &&
-                !this.state.paused &&
-                !this.state.done && (
-                  <Button bsSize="large" onClick={this.recover}>
-                    Recover account's balances
-                  </Button>
-                )}
+            <ButtonToolbar>
+              {!this.state.running && !this.state.paused && !this.state.done && (
+                <Button bsSize="large" onClick={this.recover}>
+                  Recover account's balances
+                </Button>
+              )}
               {this.state.running && (
                 <Button bsSize="large" onClick={this.interrupt}>
                   Pause
                 </Button>
               )}
-              {!this.state.running &&
-                this.state.paused && (
-                  <Button bsSize="large" onClick={this.recover}>
-                    Continue
-                  </Button>
-                )}
+              {!this.state.running && this.state.paused && (
+                <Button bsSize="large" onClick={this.recover}>
+                  Continue
+                </Button>
+              )}
               <Button
                 bsSize="large"
                 onClick={this.reset}
