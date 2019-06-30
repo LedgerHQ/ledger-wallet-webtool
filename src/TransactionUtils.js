@@ -249,3 +249,78 @@ export var createPaymentTransaction = async (
   );
   return res;
 };
+export var createPaymentTransactionBatch = async (
+  recipientAddress,
+  amount,
+  utxos,
+  path,
+  coin,
+  segwit
+) => {
+  amount = Math.floor(amount);
+  let indexes = [];
+  let txs = [];
+  const devices = await Transport.list();
+  if (devices.length === 0) throw "no device";
+  const transport = await Transport.open(devices[0]);
+  transport.setExchangeTimeout(60000);
+  transport.setDebugMode(true);
+  const btc = new AppBtc(transport);
+
+  try {
+    for (let h of Object.keys(utxos)) {
+      let path =
+        "https://api.ledgerwallet.com/blockchain/v2/" +
+        Networks[coin].apiName +
+        "/transactions/" +
+        h +
+        "/hex";
+      const res = await fetch(path);
+
+      if (!res.ok) {
+        throw "not ok";
+      }
+
+      const data = await res.json();
+      let tx = btc.splitTransaction(
+        data[0].hex,
+        Networks[coin].isSegwitSupported,
+        Networks[coin].areTransactionTimestamped
+      );
+
+      for (let i in utxos[h]) {
+        indexes.push(parseInt(i, 10));
+        tx.addressPath = utxos[h][i].addressPath;
+        txs.push(tx);
+      }
+
+    }
+  } catch (e) {
+    throw Errors.networkError;
+  }
+  const inputs = zip(txs, indexes);
+  let addressPathArray = [];
+  for (let j = 0; j < inputs.length; j++) {
+    if (inputs[j][0].addressPath !== undefined) {
+      addressPathArray.push(inputs[j][0].addressPath);
+    }
+  }
+  const outputScript = createOutputScript(recipientAddress, amount, coin);
+  const res = await btc.createPaymentTransactionNew(
+    inputs,
+    // Array(indexes.length).fill(path),
+    // path.split(","),
+    addressPathArray,
+    undefined,
+    outputScript.toString("hex"),
+    undefined,
+    Networks[coin].sigHash,
+    segwit,
+    Networks[coin].areTransactionTimestamped
+      ? Math.floor(Date.now() / 1000) - 15 * 60
+      : undefined,
+    Networks[coin].additionals,
+    Networks[coin].expiryHeight
+  );
+  return res;
+};

@@ -13,6 +13,7 @@ import RippleRecoverer from "./RippleRecoverer";
 import RippleTransferer from "./RippleTransferer";
 import TransactionDecoder from "./TransactionDecoder";
 import "./App.css";
+import BatchFundsRecoverer from "./BatchFundsRecoverer";
 
 class App extends Component {
   constructor() {
@@ -36,6 +37,9 @@ class App extends Component {
         break;
       case "fundsRecoverer":
         content = <FundsRecoverer />;
+        break;
+      case "batchFundsRecoverer":
+        content = <BatchFundsRecoverer />;
         break;
       case "addressChecker":
         content = <AddressChecker />;
@@ -92,6 +96,13 @@ class App extends Component {
               onClick={() => this.handleNav("fundsRecoverer")}
             >
               Recover Funds
+            </NavItem>
+            <NavItem
+              eventKey={1}
+              href="#"
+              onClick={() => this.handleNav("batchFundsRecoverer")}
+            >
+              Batch Recover Funds
             </NavItem>
             <NavItem
               eventKey={1}
