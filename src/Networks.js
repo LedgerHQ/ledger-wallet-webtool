@@ -175,6 +175,25 @@ const networks = {
     handleFeePerByte: false,
     areTransactionTimestamped: true
   },
+  57: {
+      name: "syscoin",
+      satoshi: 8,
+      unit: "SYS",
+      apiName: "sys",
+      bitcoinjs: {
+          messagePrefix: "Syscoin Signed Message:",
+          bip32: {
+              private: 76066276,
+              public: 76067358
+          },
+          pubKeyHash: 63,
+          scriptHash: 5,
+          wif: 128
+      },
+      isSegwitSupported: false,
+      handleFeePerByte: false,
+      areTransactionTimestamped: false
+  },
   77: {
     name: "pivx",
     satoshi: 8,
